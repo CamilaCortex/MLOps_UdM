@@ -61,8 +61,8 @@ class UserGenerator:
             subscription_type = random.choices(subscription_types, weights=[0.40, 0.30, 0.25, 0.05])[0]
             
             # Comportamiento transaccional
-            total_purchases = random.randint(0, 50)
-            avg_order_value = random.uniform(10, 500)
+            total_purchases = random.randint(0, 50) # genera valor  entero entre 0 a 50 
+            avg_order_value = random.uniform(10, 500) # genera valor decimal entre 10 y 500
             last_purchase_days = random.randint(0, 180) if total_purchases > 0 else 999
             
             # Métricas de engagement
