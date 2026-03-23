@@ -24,4 +24,5 @@ members = [
     "04-Deployment/deploy/web-service",
     "04-Deployment/deploy/web-service/taxi-prediction",
     "04-Deployment/deploy/web-service-docker",
+    "01-Intro-ML/my-first-env-with-uv",
 ]

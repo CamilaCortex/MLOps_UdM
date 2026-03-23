@@ -1,0 +1,23 @@
+[project]
+name = "my-first-env-with-uv"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.3.1",
+]
+
+[dependency-groups]
+dev = [
+    "numpy>=2.3.2",
+    "pandas>=2.3.1",
+    "black>=23.0.0",      # Formateador de código
+    "flake8>=6.0.0",      # Linter
+    "jupyter>=1.0.0",     # Notebooks
+]
+
+test = [
+    "pytest>=7.0.0",     # Testing framework
+    "pytest-cov>=4.0.0",  # Cobertura de pruebas
+]
