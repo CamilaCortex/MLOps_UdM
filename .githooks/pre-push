@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# =============================================================================
+# pre-push hook: Validates branch naming convention
+# Convention: <type>/<short-description>
+# =============================================================================
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+# Allow main/master/develop without validation
+if echo "$branch" | grep -qE "^(main|master|develop)$"; then
+    exit 0
+fi
+
+# Branch naming pattern: type/description (kebab-case)
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|hotfix|release)/[a-z0-9][a-z0-9-]*$"
+
+if ! echo "$branch" | grep -qE "$pattern"; then
+    echo ""
+    echo "=========================================="
+    echo "  PUSH REJECTED - Invalid branch name"
+    echo "=========================================="
+    echo ""
+    echo "  Your branch: \"$branch\""
+    echo ""
+    echo "  Must follow: <type>/<short-description>"
+    echo "  (description in kebab-case)"
+    echo ""
+    echo "  Examples:"
+    echo "    feat/add-monitoring-module"
+    echo "    fix/mlflow-tracking-bug"
+    echo "    docs/course-overview"
+    echo ""
+    echo "=========================================="
+    exit 1
+fi
+
+exit 0

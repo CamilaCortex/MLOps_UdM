@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# =============================================================================
+# commit-msg hook: Enforces Conventional Commits format
+# https://www.conventionalcommits.org/en/v1.0.0/
+# =============================================================================
+
+commit_msg_file="$1"
+commit_msg=$(cat "$commit_msg_file")
+
+# Skip merge commits
+if echo "$commit_msg" | grep -qE "^Merge "; then
+    exit 0
+fi
+
+# Conventional Commits regex
+# Format: <type>[optional scope][!]: <description>
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_-]+\))?(!)?: .{1,}"
+
+if ! echo "$commit_msg" | head -1 | grep -qE "$pattern"; then
+    echo ""
+    echo "=========================================="
+    echo "  COMMIT REJECTED - Invalid format"
+    echo "=========================================="
+    echo ""
+    echo "  Your commit message:"
+    echo "  \"$(head -1 "$commit_msg_file")\""
+    echo ""
+    echo "  Must follow Conventional Commits:"
+    echo "  <type>[scope]: <description>"
+    echo ""
+    echo "  Allowed types:"
+    echo "    feat     - New feature"
+    echo "    fix      - Bug fix"
+    echo "    docs     - Documentation only"
+    echo "    style    - Formatting, no code change"
+    echo "    refactor - Code change, no new feature/fix"
+    echo "    perf     - Performance improvement"
+    echo "    test     - Adding/fixing tests"
+    echo "    build    - Build system or dependencies"
+    echo "    ci       - CI configuration"
+    echo "    chore    - Other changes"
+    echo "    revert   - Revert a commit"
+    echo ""
+    echo "  Examples:"
+    echo "    feat: add MLflow tracking to pipeline"
+    echo "    fix(tracking): correct metric logging"
+    echo "    docs: update course overview"
+    echo "    feat!: redesign experiment pipeline"
+    echo ""
+    echo "=========================================="
+    exit 1
+fi
+
+# Validate description is not empty after the colon
+description=$(echo "$commit_msg" | head -1 | sed -E 's/^[a-z]+(\([a-zA-Z0-9_-]+\))?(!)?: //')
+if [ -z "$description" ]; then
+    echo ""
+    echo "  ERROR: Description after type cannot be empty."
+    echo "  Example: feat: add new feature"
+    echo ""
+    exit 1
+fi
+
+exit 0
