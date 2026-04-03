@@ -4,9 +4,17 @@
 
 ### 1) Instalar Git
 
-- Windows:
-  - Seguir la guia de: <https://git-scm.com/downloads/win>
-  
+- **Windows**: Seguir la guia de: <https://git-scm.com/downloads/win>
+- **macOS**: Git viene pre-instalado. Para la version mas reciente:
+
+```bash
+# Opcion 1: Instalar Xcode Command Line Tools (incluye Git)
+xcode-select --install
+
+# Opcion 2: Instalar via Homebrew (recomendado)
+brew install git
+```
+
 Verificar:
 
 ```bash
@@ -52,18 +60,38 @@ git pull
 
 ### 1) Instalar Python 3.11+ (recomendado 3.11)
 
-- Windows (PowerShell):
+- **macOS** (Terminal / zsh):
+
+```bash
+# Instalar Homebrew si no lo tienes
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Instalar pyenv
+brew install pyenv
+
+# Agregar pyenv al shell (ejecutar una sola vez)
+echo 'eval "$(pyenv init --path)"' >> ~/.zshrc
+echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+source ~/.zshrc
+
+# Instalar Python
+pyenv install 3.11.9
+pyenv global 3.11.9
+# Dentro del repositorio del curso
+pyenv local 3.11.9
+```
+
+- **Windows** (PowerShell):
 
 ```powershell
-#(pyenv-win): administrar múltiples versiones
-winget install pyenv-win.pyenv-win 
+#(pyenv-win): administrar multiples versiones
+winget install pyenv-win.pyenv-win
 
 # Cierra y abre la terminal, luego:
 pyenv install 3.11.9
 pyenv global 3.11.9
 # Dentro del repositorio del curso
 pyenv local 3.11.9
-python -V
 ```
 
 Verificar:
@@ -76,7 +104,17 @@ python -V
 
 Instalar uv:
 
-- Windows (PowerShell):
+- **macOS** (Terminal):
+
+```bash
+# Opcion 1: Con Homebrew
+brew install uv
+
+# Opcion 2: Installer oficial
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+- **Windows** (PowerShell):
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
@@ -86,6 +124,10 @@ Crear y activar un entorno virtual (siempre dentro de la carpeta del repositorio
 
 ```bash
 uv venv
+
+# macOS / Linux
+source .venv/bin/activate
+
 # Windows (PowerShell)
 .\.venv\Scripts\Activate.ps1
 ```
@@ -114,18 +156,28 @@ Instalar dependencias en nuestro equipo si existe `pyproject.toml`, también sir
 uv sync
 ```
 
-### 3) venv integrado (opción alternativa) --> no recomendada
+### 3) venv integrado (opcion alternativa) --> no recomendada
 
 ```bash
 python -m venv .venv
+
+# macOS / Linux
+source .venv/bin/activate
+
 # Windows (PowerShell)
 .\.venv\Scripts\Activate.ps1
 
-# Inside the venv, use pip
+# Dentro del venv, usar pip
 pip install -U pip
-pip install -r requirements.txt  # if provided
+pip install -r requirements.txt  # si existe
 ```
 
-### 4) Guía rápida de activación
+### 4) Guia rapida de activacion
 
-- Windows (PowerShell): `.\.venv\Scripts\Activate.ps1`
+| Sistema | Comando |
+|---------|---------|
+| macOS / Linux | `source .venv/bin/activate` |
+| Windows (PowerShell) | `.\.venv\Scripts\Activate.ps1` |
+| Windows (CMD) | `.\.venv\Scripts\activate.bat` |
+
+Para desactivar: `deactivate`
