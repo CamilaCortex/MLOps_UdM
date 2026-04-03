@@ -1,0 +1,25 @@
+repos:
+  # --- Hooks generales de higiene ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace        # Elimina espacios al final de las lineas
+      - id: end-of-file-fixer          # Asegura newline al final del archivo
+      - id: check-yaml                 # Valida sintaxis YAML
+      - id: check-added-large-files    # Alerta si subes archivos >500KB
+        args: ['--maxkb=500']
+      - id: check-merge-conflict       # Detecta marcadores de conflicto sin resolver
+
+  # --- Linter rapido (Ruff reemplaza flake8, isort, pyflakes, etc.) ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff                       # Lint
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format               # Formateo (reemplaza black)
+
+  # --- Seguridad: detecta secretos antes de que lleguen al repo ---
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
+    hooks:
+      - id: gitleaks
