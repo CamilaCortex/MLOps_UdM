@@ -10,8 +10,9 @@ Este proyecto proporciona una introducción práctica al seguimiento de experime
 ├── data/
 │   └── processed/
 ├── notebooks/
-│   ├── 01_experiment_tracking_intro.ipynb
-│   ├── 02_mlflow_basics.ipynb
+│   ├── 00_data_preparation.ipynb
+│   ├── 01_first_steps_without_tracking.ipynb
+│   ├── 02_experiment_tracking_intro.ipynb
 │   └── 03_mlflow_advanced.ipynb
 ├── scripts/
 │   ├── preprocess_data.py
@@ -91,6 +92,7 @@ Luego, abre tu navegador web y navega a `http://127.0.0.1:5000`.
 
 El directorio `notebooks/` contiene tres notebooks que proporcionan una explicación más detallada de los conceptos:
 
-* **01_experiment_tracking_intro.ipynb:** Una visión conceptual general del seguimiento de experimentos.
-* **02_mlflow_basics.ipynb:** Una introducción práctica a MLflow.
-* **03_mlflow_advanced.ipynb:** Cubre características más avanzadas de MLflow como optimización de hiperparámetros y registro de modelos.
+* **00_data_preparation.ipynb:** Descarga y preprocesamiento del dataset de taxis NYC.
+* **01_first_steps_without_tracking.ipynb:** Entrenamiento de un modelo sin tracking (motiva el "por que").
+* **02_experiment_tracking_intro.ipynb:** Introduccion practica a MLflow (logging manual y autolog).
+* **03_mlflow_advanced.ipynb:** Optimizacion de hiperparametros con Optuna y Model Registry.
