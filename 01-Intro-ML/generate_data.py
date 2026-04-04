@@ -5,7 +5,6 @@ Este script simula un dataset realista para el problema de identificar qué usua
 deben recibir promociones basado en su comportamiento transaccional y perfil.
 """
 
-import json
 import random
 from datetime import datetime, timedelta
 

@@ -128,7 +128,7 @@ def run_comprehensive_test():
     
     # 2. Basic prediction
     logger.info("\n2️⃣ Testing basic prediction...")
-    basic_result = test_prediction_api(base_url)
+    test_prediction_api(base_url)
     
     # 3. Edge cases
     logger.info("\n3️⃣ Testing edge cases...")
