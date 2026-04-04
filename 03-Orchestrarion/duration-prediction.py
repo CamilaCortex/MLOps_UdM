@@ -19,8 +19,14 @@ models_folder.mkdir(exist_ok=True)
 
 
 def read_dataframe(year, month):
-    """
-    #TODO add docstrings all functions
+    """Download and preprocess NYC green taxi trip data for a given month.
+
+    Args:
+        year: Year of the data (e.g. 2023).
+        month: Month of the data (1-12).
+
+    Returns:
+        DataFrame with duration column and PU_DO feature.
     """
     url = f'https://d37ci6vzurychx.cloudfront.net/trip-data/green_tripdata_{year}-{month:02d}.parquet'
     df = pd.read_parquet(url)
@@ -61,7 +67,7 @@ def train_model(X_train, y_train, X_val, y_val, dv):
             'learning_rate': 0.09585355369315604,
             'max_depth': 30,
             'min_child_weight': 1.060597050922164,
-            'objective': 'reg:linear',
+            'objective': 'reg:squarederror',
             'reg_alpha': 0.018060244040060163,
             'reg_lambda': 0.011658731377413597,
             'seed': 42

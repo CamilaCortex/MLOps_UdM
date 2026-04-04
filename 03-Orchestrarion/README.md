@@ -1,63 +1,142 @@
-# Guía de Orquestación en Machine Learning 🤖🛠️
+# Modulo 03: Orquestacion de Pipelines ML
 
-## ¿Qué es la orquestación en ML? 🎯
+## Objetivo
 
-La orquestación en Machine Learning (ML) se refiere a la coordinación automática de tareas, procesos y flujos de trabajo que componen el ciclo de vida de un proyecto de ML. Esto incluye desde la ingesta de datos, el preprocesamiento, el entrenamiento de modelos, la validación, hasta el despliegue y monitoreo. Su objetivo es asegurar que cada paso se ejecute en el orden correcto, de manera reproducible y escalable.
+Aprender a **automatizar y coordinar** las etapas de un pipeline de ML
+(ingesta, preprocesamiento, entrenamiento, evaluacion) usando herramientas
+de orquestacion. Al finalizar, tendras un pipeline reproducible y
+monitoreable con Prefect.
 
-## ¿Por qué es importante? 💡
+## Que es la orquestacion en ML?
 
-- **Automatización**: Reduce el trabajo manual y los errores humanos.
-- **Reproducibilidad**: Permite repetir experimentos y obtener los mismos resultados.
-- **Escalabilidad**: Facilita el manejo de grandes volúmenes de datos y modelos complejos.
-- **Colaboración**: Mejora la integración entre equipos y herramientas.
+La orquestacion es la coordinacion automatica de tareas que componen
+el ciclo de vida de un proyecto de ML. Su objetivo es que cada paso
+se ejecute en el orden correcto, de manera reproducible y escalable.
 
-## Aspectos clave a considerar 🧠
+```
+Sin orquestacion:                    Con orquestacion:
+  "Corro el script a mano"            Pipeline automatizado
+  "Se me olvido preprocesar"           Dependencias explicitas
+  "No se que version use"              Versionado automatico
+  "Fallo y no me entere"               Reintentos + alertas
+```
 
-- **Definir los pasos del pipeline**: ¿Qué tareas necesitas automatizar?
-- **Gestión de dependencias**: ¿Qué recursos, datos o modelos requiere cada etapa?
-- **Control de versiones**: ¿Cómo rastreas cambios en datos, código y artefactos?
-- **Manejo de errores y reinicios**: ¿Qué pasa si una tarea falla?
-- **Escalabilidad y recursos**: ¿Tu solución soporta crecer en datos y usuarios?
+## Por que es importante?
 
-## Retos comunes ⚠️
+| Problema | Como lo resuelve la orquestacion |
+|----------|--------------------------------|
+| Errores manuales | Automatizacion: el pipeline corre igual cada vez |
+| "Funciona en mi maquina" | Reproducibilidad: mismos datos + mismos pasos = mismo resultado |
+| Escalar a mas datos | Escalabilidad: el orquestador maneja recursos |
+| Colaboracion en equipo | Cada tarea esta documentada y es independiente |
 
-- Integración de múltiples herramientas y plataformas.
-- Manejo de datos heterogéneos y en tiempo real.
-- Control de versiones de datos y modelos.
-- Monitoreo y reentrenamiento automático.
-- Seguridad y gestión de accesos.
+## Estructura del modulo
 
-## Ventajas de una buena orquestación 🚀
+```
+03-Orchestrarion/
+├── README.md                              <-- Estas aqui
+├── duration-prediction.ipynb              <-- Notebook interactivo (explorar el pipeline)
+├── duration-prediction.py                 <-- Script standalone (version produccion)
+├── models/
+│   └── preprocessor.b                     <-- DictVectorizer serializado
+└── Prefect-pipelines/
+    ├── README.md                          <-- Guia detallada del pipeline Prefect
+    ├── duration_prediction_prefect.py     <-- Pipeline orquestado con Prefect
+    └── models/
+        └── preprocessor_old.b
+```
 
-- Ahorro de tiempo y recursos.
-- Mayor robustez y confiabilidad en los procesos.
-- Facilita experimentación y mejora continua.
-- Permite escalar proyectos de ML de forma profesional.
+## Progresion pedagogica
 
-## Herramientas populares 🛠️
+El modulo sigue una progresion de **notebook a produccion**:
 
+### Paso 1: Notebook interactivo (`duration-prediction.ipynb`)
 
-| Herramienta  | Descripción breve                                            |
-| ------------ | ------------------------------------------------------------- |
-| **Airflow**  | Orquestador de flujos de trabajo flexible y robusto.          |
-| **Kubeflow** | Orquestación de pipelines ML sobre Kubernetes.               |
-| **Prefect**  | Orquestación moderna con enfoque en facilidad de uso.        |
-| **Dagster**  | Pipelines de datos y ML con fuerte tipado y testing.          |
-| **Metaflow** | Simplicidad para científicos de datos, integración con AWS. |
+Explora y entiende el pipeline de ML paso a paso:
+- Descarga datos de taxis NYC (2021)
+- Feature engineering: `PU_DO` = pickup + dropoff
+- Encoding con `DictVectorizer`
+- Entrenamiento XGBoost con MLflow tracking
+- RMSE progresa de 11.44 a 6.61
 
-## Consejos para comenzar
+### Paso 2: Script standalone (`duration-prediction.py`)
 
-- **¡Empieza simple!** No necesitas la herramienta más compleja para aprender los conceptos.
-- **Documenta tus pipelines**: Un buen diagrama ayuda a entender y explicar tus flujos.
-- **Automatiza desde el principio**: Ahorra tiempo y evita errores futuros.
-- **Experimenta con varias herramientas**: Cada una tiene ventajas y casos de uso distintos.
-- **No temas equivocarte**: La orquestación es un proceso iterativo.
+Refactoriza el notebook a un script parametrizado:
 
-## Recursos recomendados 📚
+```bash
+uv run python duration-prediction.py --year 2023 --month 1
+```
 
-- [Orquestación en ML - Towards Data Science (ES)](https://towardsdatascience.com/orquestaci%C3%B3n-de-pipelines-de-machine-learning-1a2d7b5c2c1)
-- [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/)
-- [Airflow Docs](https://airflow.apache.org/docs/)
-- [Dagster Docs](https://docs.dagster.io/)
+Funciones bien definidas: `read_dataframe()`, `create_X()`, `train_model()`, `run()`.
+Calcula automaticamente el mes siguiente para validacion.
 
-¡La orquestación es clave para llevar tus proyectos de ML al siguiente nivel! 🚦
+### Paso 3: Pipeline con Prefect (`Prefect-pipelines/`)
+
+Agrega orquestacion al script:
+- Decoradores `@task` y `@flow`
+- Reintentos automaticos (`retries=3`)
+- Logging estructurado
+- Artifacts (reportes y tablas en el dashboard de Prefect)
+- Integracion con MLflow
+
+Consulta `Prefect-pipelines/README.md` para instrucciones detalladas de ejecucion.
+
+## Como ejecutar
+
+### Opcion A: Script directo (sin orquestacion)
+
+```bash
+# Requiere MLflow server corriendo en localhost:5000
+uv run mlflow server --backend-store-uri sqlite:///mlflow.db &
+uv run python duration-prediction.py --year 2023 --month 1
+```
+
+### Opcion B: Pipeline con Prefect
+
+```bash
+# Terminal 1: Iniciar Prefect server
+uv run prefect server start
+
+# Terminal 2: Configurar y ejecutar
+uv run prefect config set PREFECT_API_URL=http://127.0.0.1:4200/api
+cd Prefect-pipelines
+uv run python duration_prediction_prefect.py --year 2023 --month 1
+```
+
+Ver resultados:
+- Prefect dashboard: http://127.0.0.1:4200
+- MLflow UI: `uv run mlflow ui --backend-store-uri sqlite:///mlflow.db`
+
+## Herramientas de orquestacion
+
+| Herramienta | Descripcion | Caso de uso |
+|-------------|------------|-------------|
+| **Prefect** | Orquestacion moderna, facil de usar | Este curso |
+| **Airflow** | Estandar de la industria, flexible y robusto | Pipelines complejos |
+| **Dagster** | Fuerte tipado y testing de pipelines | Data engineering |
+| **Kubeflow** | Orquestacion sobre Kubernetes | ML a escala en la nube |
+| **Metaflow** | Simplicidad para data scientists, integracion AWS | Netflix/AWS |
+
+## Conceptos clave de Prefect
+
+| Concepto | Definicion |
+|----------|-----------|
+| **Flow** | La funcion principal que define el pipeline completo |
+| **Task** | Una unidad de trabajo individual dentro de un flow |
+| **Run** | Una ejecucion especifica de un flow |
+| **Artifact** | Datos generados por un flow (tablas, reportes, archivos) |
+| **Deployment** | Configuracion para ejecutar un flow de forma programada |
+| **Work Pool** | Infraestructura donde se ejecutan los flows |
+
+## Conexion con otros modulos
+
+```
+Modulo 02 (Experiment Tracking)    Modulo 04 (Deployment)
+        |                                   ^
+        v                                   |
+    Orquestacion (este modulo)
+    - Automatiza entrenamiento
+    - Registra en MLflow
+    - Genera artifacts
+    - Prepara para deployment
+```

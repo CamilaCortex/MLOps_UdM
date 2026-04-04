@@ -61,7 +61,7 @@ graph TD
 
 ```bash
 # Ir al directorio del proyecto
-cd /Users/mdurango/University/MLOps
+cd <ruta-de-tu-repositorio>
 
 # Instalar todo lo necesario
 uv sync
@@ -72,7 +72,7 @@ uv sync
 **🖥️ Terminal 1 - Prefect:**
 
 ```bash
-cd /Users/mdurango/University/MLOps/03-Orchestrarion/Prefect-pipelines
+cd <ruta-de-tu-repositorio>/03-Orchestrarion/Prefect-pipelines
 uv run prefect server start
 ```
 
@@ -83,7 +83,7 @@ uv run prefect server start
 **🖥️ Terminal 2 - Pipeline:**
 
 ```bash
-cd /Users/mdurango/University/MLOps/03-Orchestrarion/Prefect-pipelines
+cd <ruta-de-tu-repositorio>/03-Orchestrarion/Prefect-pipelines
 
 # Configurar Prefect: para añadir variable de enterno
 uv run prefect config set PREFECT_API_URL=http://127.0.0.1:4200/api
@@ -184,7 +184,7 @@ uv run prefect config set PREFECT_API_URL=http://127.0.0.1:4200/api
 
 ```bash
 # Instala las dependencias
-cd /Users/mdurango/University/MLOps
+cd <ruta-de-tu-repositorio>
 uv sync
 ```
 
@@ -308,7 +308,7 @@ pkill -f "mlflow ui"
 **Ver experimentos en MLflow:**
 
 ```bash
-cd /Users/mdurango/University/MLOps/03-Orchestrarion/Prefect-pipelines
+cd <ruta-de-tu-repositorio>/03-Orchestrarion/Prefect-pipelines
 
 # Iniciar MLflow UI para ver experimentos guardados
 uv run mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000

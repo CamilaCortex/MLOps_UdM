@@ -5,7 +5,6 @@ Este script simula un dataset realista para el problema de identificar qué usua
 deben recibir promociones basado en su comportamiento transaccional y perfil.
 """
 
-import json
 import random
 from datetime import datetime, timedelta
 
@@ -134,21 +133,36 @@ class UserGenerator:
         
         return df_with_nulls
 
-    def create_dataset(self):
-        """Función principal para generar y guardar los datos."""
-        print("Generando datos sintéticos de usuarios para targeting de promociones...")
-        
+    def create_dataset(self, save_csv=True, output_file="usuarios_promociones.csv"):
+        """Funcion principal para generar y guardar los datos.
+
+        Args:
+            save_csv: Si True, guarda el dataset como CSV.
+            output_file: Ruta del archivo CSV de salida.
+
+        Returns:
+            pd.DataFrame: Dataset generado.
+        """
+        print("Generando datos sinteticos de usuarios para targeting de promociones...")
+
         # Generar datos
         df = self.generate_synthetic_users()
-        
+
         df = self.add_missing_data(df)
-        
+
         # Crear variable target
         df["dar_promocion"] = random.choices([0, 1], k=len(df))
-        
+
         # Guardar datos
-        output_file = 'usuarios_promociones.csv'
-        df.to_csv(output_file, index=False, encoding='utf-8')
-        
+        if save_csv:
+            df.to_csv(output_file, index=False, encoding="utf-8")
+            print(f"Dataset guardado en: {output_file}")
+
         return df
+
+
+if __name__ == "__main__":
+    generator = UserGenerator(seed=42, n_samples=10000)
+    df = generator.create_dataset(save_csv=True)
+    print(f"\nDataset generado: {df.shape[0]} filas, {df.shape[1]} columnas")
 
