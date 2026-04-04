@@ -20,6 +20,13 @@ dependencies = [
     "xgboost>=3.0.4",
 ]
 
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "pytest>=8.0.0",
+    "pre-commit>=4.0.0",
+]
+
 [tool.uv.workspace]
 members = [
     "04-Deployment/deploy/web-service",
