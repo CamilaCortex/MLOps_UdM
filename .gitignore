@@ -163,6 +163,7 @@ docker-compose.yaml
 !requirements.yml
 !.pre-commit-config.yaml
 !.github/workflows/*.yml
+!00-Setup/templates/*.yaml
 
 # IDE
 .vscode/

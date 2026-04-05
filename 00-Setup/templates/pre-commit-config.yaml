@@ -1,0 +1,95 @@
+# =============================================================================
+# PRE-COMMIT HOOKS
+# =============================================================================
+#
+# ---- ¿Qué es esto? ----
+#
+# Un "hook" es un script que se ejecuta AUTOMÁTICAMENTE en un momento
+# específico. En este caso, estos hooks se ejecutan justo ANTES de cada
+# "git commit". Si alguno falla, el commit se cancela y te muestra qué
+# hay que corregir.
+#
+# Piensa en esto como un "control de calidad automático" que revisa tu
+# código cada vez que intentas guardar un cambio en Git.
+#
+# ---- ¿Qué hacen estos hooks? ----
+#
+# 1. Revisan que no haya errores de formato (espacios, saltos de línea, etc.)
+# 2. Pasan un linter (ruff) que detecta errores y malas prácticas en Python
+# 3. Formatean el código automáticamente con ruff para que sea consistente
+# 4. Revisan que los notebooks Jupyter estén limpios (sin outputs gigantes)
+#
+# ---- ¿Cómo se instala? ----
+#
+# 1. Copia este archivo a la raíz de tu proyecto:
+#       cp 00-Setup/templates/pre-commit-config.yaml .pre-commit-config.yaml
+#
+# 2. Instala pre-commit en tu entorno:
+#       uv add --dev pre-commit       (si usas uv)
+#       pip install pre-commit         (si usas venv + pip)
+#
+# 3. Activa los hooks en tu repositorio:
+#       pre-commit install
+#
+# 4. A partir de ahora, cada "git commit" ejecutará estos checks.
+#    Si quieres ejecutarlos manualmente sin hacer commit:
+#       pre-commit run --all-files
+#
+# =============================================================================
+
+# Versión mínima de pre-commit requerida
+minimum_pre_commit_version: "3.0.0"
+
+repos:
+  # ---------------------------------------------------------------------------
+  # Hooks básicos (incluidos con pre-commit, no requieren instalar nada extra)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Elimina espacios en blanco al final de las líneas
+      - id: trailing-whitespace
+
+      # Asegura que todos los archivos terminen con una línea en blanco
+      # (convención estándar en archivos de texto)
+      - id: end-of-file-fixer
+
+      # Verifica que los archivos YAML tengan sintaxis válida
+      - id: check-yaml
+
+      # Detecta si alguien intenta subir archivos grandes por accidente
+      # (> 500 KB). Útil para evitar subir datasets o modelos a Git.
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+
+      # Detecta si hay credenciales o claves privadas en el código
+      - id: detect-private-key
+
+      # Verifica que los archivos JSON tengan sintaxis válida
+      - id: check-json
+        # No falla si no hay archivos JSON en el proyecto
+        types: [json]
+
+  # ---------------------------------------------------------------------------
+  # Ruff: linter + formateador de Python (reemplaza flake8, isort, black)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.6
+    hooks:
+      # Paso 1: Lint — detecta errores, imports sin usar, malas prácticas
+      - id: ruff
+        args: [--fix]  # corrige automáticamente lo que pueda
+
+      # Paso 2: Format — formatea el código (como black, pero más rápido)
+      - id: ruff-format
+
+  # ---------------------------------------------------------------------------
+  # Limpiar notebooks Jupyter (eliminar outputs antes de commitear)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/kynan/nbstripoutput
+    rev: 0.8.1
+    hooks:
+      # Elimina los outputs (gráficos, tablas, prints) de los notebooks
+      # antes de guardarlos en Git. Esto mantiene los diffs limpios y
+      # evita que el repo crezca con imágenes embebidas.
+      - id: nbstripoutput
