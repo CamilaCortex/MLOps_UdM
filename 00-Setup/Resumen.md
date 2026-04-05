@@ -81,11 +81,16 @@ pyenv global 3.11.9
 pyenv local 3.11.9
 ```
 
-- **Windows** (PowerShell):
+- **Windows** (PowerShell como Administrador):
 
 ```powershell
-#(pyenv-win): administrar multiples versiones
-winget install pyenv-win.pyenv-win
+# pyenv-win: administrar multiples versiones (metodo oficial)
+Invoke-WebRequest -UseBasicParsing `
+  -Uri "https://raw.githubusercontent.com/pyenv-win/pyenv-win/master/pyenv-win/install-pyenv-win.ps1" `
+  -OutFile "./install-pyenv-win.ps1"; & "./install-pyenv-win.ps1"
+
+# Si aparece error UnauthorizedAccess, ejecuta primero:
+# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
 
 # Cierra y abre la terminal, luego:
 pyenv install 3.11.9

@@ -9,63 +9,69 @@ Puedes usar uv (rápido y sencillo) o Poetry (más completo). En este curso reco
 - macOS (zsh/bash):
 
 ```bash
-# 1) Install Git
+# 1) Instalar Git
 brew install git
 
-# 2) Install Python 3.11+ (recommended 3.11 or 3.12)
-brew install python@3.11
+# 2) Instalar Python 3.11 con pyenv
+brew install pyenv
+echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+exec "$SHELL"
+pyenv install 3.11.9
+pyenv global 3.11.9
 
-# 3) Install uv
+# 3) Instalar uv
 brew install uv
-exec "$SHELL" # reload shell so 'uv' is on PATH
 
-# 4) Clone the course repo (replace with your fork URL if contributing)
+# 4) Clonar el repo del curso (reemplaza con tu fork)
 git clone <your-repo-url>
 cd <repo-name>
 
-# 5) Create and activate a virtual environment
+# 5) Crear y activar entorno virtual
 uv venv
 source .venv/bin/activate
 
-# 6) (If a pyproject.toml exists) install dependencies
+# 6) (Si existe pyproject.toml) instalar dependencias
 uv sync
 
-# 7) Verify
+# 7) Verificar
 python -V
-pip -V
 uv --version
 ```
 
-- Windows (PowerShell):
+- Windows (PowerShell como Administrador):
 
 ```powershell
-# 1) Install Git
+# 1) Instalar Git
 winget install --id Git.Git -e --source winget
 
-# 2) Install Python 3.11+
-winget install --id Python.Python.3.11 -e --source winget
+# 2) Instalar Python 3.11 con pyenv-win
+Invoke-WebRequest -UseBasicParsing `
+  -Uri "https://raw.githubusercontent.com/pyenv-win/pyenv-win/master/pyenv-win/install-pyenv-win.ps1" `
+  -OutFile "./install-pyenv-win.ps1"; & "./install-pyenv-win.ps1"
+# Cierra y abre la terminal, luego:
+pyenv install 3.11.9
+pyenv global 3.11.9
 
-# 3) Install uv
-irm https://astral.sh/uv/install.ps1 | iex
+# 3) Instalar uv
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# 4) Clone the course repo (replace with your fork URL if contributing)
+# 4) Clonar el repo del curso (reemplaza con tu fork)
 git clone <your-repo-url>
 cd <repo-name>
 
-# 5) Create and activate a virtual environment
+# 5) Crear y activar entorno virtual
 uv venv
 .\.venv\Scripts\Activate.ps1
 
-# 6) (If a pyproject.toml exists) install dependencies
+# 6) (Si existe pyproject.toml) instalar dependencias
 uv sync
 
-# 7) Verify
+# 7) Verificar
 python -V
-pip -V
 uv --version
 ```
 
-Si prefieres Poetry, consulta `02-python-envs.md` y `03-dependency-management.md`.
+Si prefieres Poetry o venv, consulta `02-python-envs.md` y `03-dependency-management.md`.
 
 ### Qué aprenderás aquí
 
@@ -78,13 +84,19 @@ Si prefieres Poetry, consulta `02-python-envs.md` y `03-dependency-management.md
 ### Contenidos
 
 - `01-git-github.md`: Instalación de Git/GitHub, SSH, flujos de trabajo y PRs
-- `02-python-envs.md`: Instalación de Python, entornos virtuales, uv/Poetry
+- `01.1-conventional-commits.md`: Guía de Conventional Commits y nomenclatura de ramas
+- `02-python-envs.md`: Instalación de Python, entornos virtuales (uv, venv, Poetry)
+- `02.1-uv-conda-venv.md`: Comparación práctica entre uv, venv y Miniconda
 - `03-dependency-management.md`: Gestión y bloqueo de dependencias con uv y Poetry
-- `04-tooling.md`: VS Code, ruff, black, pre-commit
+- `04-tooling.md`: VS Code, extensiones, ruff, pre-commit hooks
 - `05-data-and-secrets.md`: Archivos .env y protección de secretos (local y CI)
 - `06-github-actions.md`: CI de ejemplo para uv y Poetry
 - `07-os-notes.md`: Consejos para macOS y Windows (shells, rutas, permisos)
-- `templates/`: ejemplos listos para copiar (pyproject, CI, pre-commit, .env, .gitignore)
+- `08-pre-commit.md`: Configuración de hooks de pre-commit
+- `09-cicd-guide.md`: Guía de CI/CD
+- `10-git-lfs.md`: Git LFS para archivos grandes (modelos, imágenes, datasets)
+- `ejercicio-setup.md`: Ejercicio práctico para verificar tu entorno
+- `templates/`: ejemplos listos para copiar (pyproject, pre-commit, .gitignore)
 - `scripts/`: scripts de configuración multiplataforma para uv y Poetry
 
 ### Cómo usar esta carpeta
