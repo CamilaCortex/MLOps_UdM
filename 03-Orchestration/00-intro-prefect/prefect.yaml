@@ -18,3 +18,7 @@ deployments:
     parameters:
       lat: 4.7110
       lon: -74.0721
+
+# prefect deployment run fetch-weather/simple-flow-deployment
+# prefect deployment ls
+# prefect deployment delete <flow-name>/<deployment-name>
