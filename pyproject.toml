@@ -10,6 +10,7 @@ dependencies = [
     "matplotlib>=3.10.5",
     "mlflow>=3.2.0",
     "numpy>=2.3.2",
+    "openai>=2.30.0",
     "optuna>=4.4.0",
     "pandas>=2.3.1",
     "prefect>=3.4.12",
