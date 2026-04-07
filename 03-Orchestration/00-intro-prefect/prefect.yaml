@@ -1,0 +1,26 @@
+name: weather-flows
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /Users/mdurango/Downloads/proyectos/MLOps_UdM/03-Orchestration/00-intro-prefect
+
+deployments:
+  - name: simple-flow-deployment
+    entrypoint: flows/weather1-flow.py:fetch_weather
+    schedule:
+      cron: "*/10 * * * *"
+      timezone: "America/Bogota"
+    parameters:
+      lat: 6.2476
+      lon: -75.5658
+
+  - name: scheduled-flow
+    entrypoint: flows/weather1-flow.py:fetch_weather
+    schedule:
+      cron: "0 */2 * * *"
+      timezone: "America/Bogota"
+    parameters:
+      lat: 4.7110
+      lon: -74.0721
+
+# prefect deploy --all   
+# prefect deployment ls
