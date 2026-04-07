@@ -1,5 +1,8 @@
+name: weather-flows
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /Users/mdurango/Downloads/proyectos/MLOps_UdM/03-Orchestration/00-intro-prefect
 
-# Define deployments
 deployments:
   - name: simple-flow-deployment
     entrypoint: flows/weather1-flow.py:fetch_weather
@@ -19,6 +22,5 @@ deployments:
       lat: 4.7110
       lon: -74.0721
 
-# prefect deployment run fetch-weather/simple-flow-deployment
+# prefect deploy --all   
 # prefect deployment ls
-# prefect deployment delete <flow-name>/<deployment-name>
