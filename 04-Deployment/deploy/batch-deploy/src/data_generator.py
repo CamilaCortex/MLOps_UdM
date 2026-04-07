@@ -5,8 +5,12 @@ import numpy as np
 from datetime import datetime
 import sys
 import os
+import logging
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config.settings as settings
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 def generate_taxi_data(num_trips=None):
     """
@@ -21,7 +25,7 @@ def generate_taxi_data(num_trips=None):
     if num_trips is None:
         num_trips = settings.NUM_TRIPS
         
-    print(f"🚕 Generando {num_trips} viajes de taxi...")
+    logging.info(f"Generando {num_trips} viajes de taxi...")
     
     # Usar seed para resultados reproducibles
     np.random.seed(42)
@@ -44,8 +48,8 @@ def generate_taxi_data(num_trips=None):
             same_location.sum()
         )
     
-    print(f"✅ Generados {len(df)} viajes")
-    print(f"📊 Distancia promedio: {df['trip_distance'].mean():.2f} km")
+    logging.info(f"Generados {len(df)} viajes")
+    logging.info(f"Distancia promedio: {df['trip_distance'].mean():.2f} km")
     
     return df
 
@@ -58,7 +62,7 @@ def save_batch_data(df, timestamp=None):
     filepath = settings.DATA_INPUT_DIR / filename
     
     df.to_parquet(filepath)
-    print(f"📁 Datos guardados en: {filepath}")
+    logging.info(f"Datos guardados en: {filepath}")
     return filepath
 
 # Función principal para ejecutar directamente
@@ -69,4 +73,4 @@ if __name__ == "__main__":
     # Guardar datos
     filepath = save_batch_data(df)
     
-    print(f"🎉 Proceso completado. Archivo: {filepath}")
+    logging.info(f"Proceso completado. Archivo: {filepath}")

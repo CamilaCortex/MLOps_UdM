@@ -18,7 +18,7 @@ MLFLOW_EXPERIMENT_NAME = "nyc-taxi-experiment-prefect"
 MLFLOW_DEFAULT_URI = "sqlite:///mlflow.db"
 
 # Feature configuration
-CATEGORICAL_FEATURES = ['PULocationID', 'DOLocationID']
+CATEGORICAL_FEATURES = ['PU_DO', 'trip_distance']  # PU_DO es combinación de PULocationID_DOLocationID
 TARGET_COLUMN = 'duration'
 
 # Data quality thresholds

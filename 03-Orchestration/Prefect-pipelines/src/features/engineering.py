@@ -26,9 +26,14 @@ def create_features(df: pd.DataFrame, dv: Optional[DictVectorizer] = None) -> Tu
     """
     logger = get_run_logger()
     
-    dicts = df[CATEGORICAL_FEATURES].to_dict(orient='records')
+    # Crear feature PU_DO combinado
+    df_features = df.copy()
+    df_features['PU_DO'] = df_features['PULocationID'].astype(str) + '_' + df_features['DOLocationID'].astype(str)
     
-    logger.info(f"Created {len(dicts)} feature dictionaries")
+    # Usar solo PU_DO y trip_distance
+    dicts = df_features[['PU_DO', 'trip_distance']].to_dict(orient='records')
+    
+    logger.info(f"Created {len(dicts)} feature dictionaries with PU_DO combined")
 
     if dv is None:
         dv = DictVectorizer()

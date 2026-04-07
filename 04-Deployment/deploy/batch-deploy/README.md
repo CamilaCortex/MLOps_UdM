@@ -1,127 +1,185 @@
-# 🚀 NYC Taxi Batch Prediction - Versión Simplificada
+# **Batch** Deployment - Predicciones Automatizadas
 
-Sistema de predicciones por lotes para duración de viajes de taxis NYC, diseñado para **aprender MLOps** paso a paso.
+Sistema de predicciones por lotes para duración de viajes de taxis NYC usando el modelo entrenado con Prefect + MLflow.
 
-## 🎯 ¿Qué es Batch Processing?
+## 📋 Paso a Paso
 
-Procesa grandes volúmenes de datos de manera programada:
+### **Paso 1: Copiar Modelo del Pipeline**
 
-- **Procesamiento masivo**: Miles de predicciones simultáneas
-- **Ejecución programada**: Automático cada X horas/días
-- **Análisis histórico**: Procesar datos acumulados
+Después de entrenar el modelo con el pipeline, copia los archivos del modelo:
 
-## 🚀 Cómo Usar el Sistema
-
-### **Paso 0: Setup Inicial (Opcional)**
+#### **Opción A: Script Python (Mac, Linux, Windows)**
 
 ```bash
-# Si es la primera vez, ejecutar setup automático
-./scripts/setup_batch_system.sh
+cd 04-Deployment/deploy/batch-deploy
+
+# Copiar modelo más reciente del pipeline
+uv run python copy_model.py
 ```
 
-- Verifica Python y dependencias
-- Crea modelo de prueba
-- Configura directorios
+### **Paso 2: Ejecutar Predicciones Batch**
 
-### **Paso 1: Activar Entorno**
+#### **Opción A: Ejecución Manual (Pruebas)**
 
 ```bash
-source .venv/bin/activate
+# Ejecutar flow completo de Prefect (100 viajes)
+uv run python src/prefect_flows.py
 ```
 
-### **Paso 2: Ejecutar Componentes**
-
-#### **A. Generar Datos**
+#### **Opción B: Deployment Automático (Producción) - Cada Hora con 1000 Viajes**
 
 ```bash
-python src/data_generator.py
+# Ejecutar deployment automático (mantener corriendo)
+uv run python deploy_batch.py
 ```
 
-- Crea 1000 viajes de taxi simulados
-- Guarda en `data/input/`
+**El deployment automático:**
+- **Frecuencia**: Cada hora (cron: `0 * * * *`)
+- **Viajes por batch**: 1000 (configurado en `config/settings.py`)
+- **Genera**: Nuevos datos aleatorios cada hora
+- **Predice**: Duración de 1000 viajes
+- **Guarda**: En SQL con batch_id único (timestamp)
+- **Mantener corriendo**: El script debe permanecer activo para ejecutar el schedule
 
-#### **B. Hacer Predicciones**
+### **2. Ejecutar Manualmente (Pruebas)**
+
+Para probar con 100 viajes:
 
 ```bash
-python src/batch_predictor.py
+uv run python src/prefect_flows.py
 ```
 
-- Carga modelo ML
-- Procesa datos y hace predicciones
-- Guarda resultados en `data/output/`
+**Esto hará:**
+- ✅ Generar 100 viajes sintéticos
+- ✅ Hacer predicciones
+- ✅ Guardar en base de datos
+- ✅ Mostrar estadísticas
 
-#### **C. Pipeline Completo**
+---
+
+### **3. Deployment Automático (Producción)**
+
+Para ejecutar automáticamente cada hora con 1000 viajes:
 
 ```bash
-python test_simple_flow.py
+uv run python deploy_batch.py
 ```
 
-- Ejecuta generación + predicción juntos
+**Importante:** El script quedará corriendo. **No lo cierres** si quieres que siga ejecutándose cada hora.
 
-### **Paso 3: Orquestación con Prefect**
+---
 
-#### **Terminal 1: Servidor**
+## 📊 Ver las Predicciones
+
+### **Opción 1: Extensión SQLite en VS Code (Recomendado)**
+
+1. **Instalar extensión** en VS Code:
+   - Buscar "SQLite Viewer" o "SQLite" en extensiones
+   - Instalar la extensión
+
+2. **Abrir la base de datos:**
+   - Navegar a: `data/database/predictions.db`
+   - Click derecho → "Open Database"
+   - O simplemente hacer click en el archivo
+
+3. **Explorar los datos:**
+   - Ver tabla `predictions`
+   - Ejecutar queries SQL
+   - Filtrar y ordenar datos
+
+---
+
+### **Opción 2: Terminal con SQLite**
 
 ```bash
-source .venv/bin/activate
-prefect server start --host 0.0.0.0 --port 4200
-```
+# Abrir base de datos
+sqlite3 data/database/predictions.db
 
-#### **Terminal 2: Ejecutar Flow**
+# Ver todas las predicciones
+SELECT * FROM predictions LIMIT 10;
 
-```bash
-source .venv/bin/activate
-export PREFECT_API_URL=http://0.0.0.0:4200/api
-python src/prefect_flows.py
-```
+# Ver estadísticas
+SELECT COUNT(*) as total, 
+       ROUND(AVG(predicted_duration_minutes), 2) as promedio
+FROM predictions;
 
-#### **Dashboard**
-
-- Abrir: <http://localhost:4200>
-- Ver ejecuciones y logs
-
-## 📁 Archivos Principales
-
-```text
-src/
-├── data_generator.py      # Genera datos de taxi
-├── batch_predictor.py     # Hace predicciones ML
-└── prefect_flows.py       # Flow con Prefect
-
-data/
-├── input/                 # Datos de entrada
-└── output/                # Resultados
-
-test_simple_flow.py        # Pipeline sin Prefect
-```
-
-## 🎓 ¿Qué Aprenderás?
-
-- **Batch Processing**: Procesamiento por lotes vs tiempo real
-- **Pipeline ML**: Datos → Modelo → Predicciones → Resultados
-- **Orquestación**: Automatizar flujos con Prefect
-- **Monitoreo**: Dashboard y logs de ejecución
-
-## 🔧 Troubleshooting
-
-### **Error: "Model file not found"**
-
-```bash
-cp ../web-service/lin_reg.bin model/model.pkl
-```
-
-### **Error: "Prefect server not running"**
-
-```bash
-prefect server start --host 0.0.0.0 --port 4200
-```
-
-### **Error: "Module not found"**
-
-```bash
-source .venv/bin/activate
+# Salir
+.quit
 ```
 
 ---
 
-**🎉 ¡Listo para aprender MLOps con batch processing!**
+### **Opción 3: Queries SQL Útiles**
+
+Usa las queries del archivo `queries_batch_predictions` para:
+- 📊 Total de predicciones por día
+- 📈 Distribución de duraciones
+- 🔍 Detección de anomalías
+- 🗺️ Rutas más frecuentes
+
+Copia y pega las queries en la extensión SQLite o en la terminal.
+
+---
+
+## 🔄 Actualizar el Modelo
+
+Cuando entrenes un nuevo modelo:
+
+```bash
+# 1. Copiar nuevo modelo
+uv run python copy_model.py
+
+# 2. Si el deployment está corriendo, reinícialo:
+#    - Presiona Ctrl+C para detener
+#    - Ejecuta de nuevo:
+uv run python deploy_batch.py
+```
+
+---
+
+## ⚙️ Configuración
+
+Editar `config/settings.py` para cambiar:
+
+- **NUM_TRIPS**: Número de viajes por batch (default: 1000)
+- **BATCH_SCHEDULE**: Frecuencia (default: `"0 * * * *"` = cada hora)
+
+---
+
+## 📁 Estructura de Archivos
+
+```
+batch-deploy/
+├── config/settings.py          # Configuración
+├── src/
+│   ├── prefect_flows.py       # Orquestación con Prefect
+│   ├── batch_predictor.py     # Lógica de predicción
+│   ├── data_generator.py      # Generación de datos
+│   └── database.py            # Manejo de BD
+├── model/                     # Modelo copiado
+├── data/
+│   ├── input/                # Datos de entrada (.parquet)
+│   └── database/             # SQLite DB (predictions.db)
+├── copy_model.py             # Copiar modelo
+├── deploy_batch.py           # Deployment automático
+└── queries_batch_predictions # Queries SQL útiles
+```
+
+---
+
+## ✅ Resumen Rápido
+
+```bash
+# 1. Copiar modelo
+uv run python copy_model.py
+
+# 2. Probar (100 viajes)
+uv run python src/prefect_flows.py
+
+# 3. Ver resultados (abrir data/database/predictions.db en VS Code)
+
+# 4. Deployment automático (1000 viajes cada hora)
+uv run python deploy_batch.py
+```
+
+¡Listo! That's all. 

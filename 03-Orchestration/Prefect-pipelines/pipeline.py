@@ -12,7 +12,7 @@ from prefect.artifacts import create_markdown_artifact
 from src.config import setup_mlflow, DEFAULT_YEAR, DEFAULT_MONTH, TARGET_COLUMN, MLFLOW_EXPERIMENT_NAME
 from src.data import read_dataframe, validate_data, calculate_next_period
 from src.features import create_features
-from src.models import optimize_hyperparameters, train_model
+from src.models import optimize_hyperparameters, train_model, register_best_model
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -76,7 +76,16 @@ def duration_prediction_flow(year: int = None, month: int = None) -> str:
     
     # Train model with optimized parameters
     logger.info("Training final model with optimized parameters...")
-    run_id, rmse = train_model(X_train, y_train, X_val, y_val, dv, best_params)
+    model_run_id, rmse = train_model(X_train, y_train, X_val, y_val, dv, best_params)
+
+    # Register best model in MLflow Model Registry
+    logger.info("Registering best model in MLflow Model Registry...")
+    model_version = register_best_model(
+        run_id=model_run_id,
+        rmse=rmse,
+        model_name="nyc-taxi-duration-predictor"
+    )
+    logger.info(f"Model registered as version {model_version}")
 
     # Create final pipeline artifact with enhanced information
     mlflow_ui_url = mlflow.get_tracking_uri().replace('sqlite:///', 'http://localhost:5000/')
@@ -93,14 +102,15 @@ def duration_prediction_flow(year: int = None, month: int = None) -> str:
 
     ## Results
     - **RMSE**: {rmse:.4f}
-    - **MLflow Run ID**: [{run_id}]({mlflow_ui_url})
+    - **MLflow Run ID**: [{model_run_id}]({mlflow_ui_url})
     - **MLflow Experiment**: {MLFLOW_EXPERIMENT_NAME}
+    - **Registered Model**: nyc-taxi-duration-predictor v{model_version}
 
     ## Next Steps
-    1. [Review model performance in MLflow UI]({mlflow_ui_url})
-    2. Compare with previous runs in Prefect Cloud
-    3. Check artifacts for detailed metrics
-    4. Consider model deployment if RMSE < threshold
+    1. [Review model in MLflow Model Registry]({mlflow_ui_url}/#/models/nyc-taxi-duration-predictor)
+    2. Transition model to **Staging** or **Production** stage
+    3. Use deployment module to serve the registered model
+    4. Compare with previous model versions
     
     ## Quick Links
     - [Prefect Cloud Dashboard](https://app.prefect.cloud)
@@ -113,7 +123,7 @@ def duration_prediction_flow(year: int = None, month: int = None) -> str:
         description="Complete pipeline execution summary"
     )
 
-    return run_id
+    return model_run_id
 
 
 if __name__ == "__main__":
@@ -126,14 +136,15 @@ if __name__ == "__main__":
 
     try:
         # Run the flow
-        run_id = duration_prediction_flow(year=args.year, month=args.month)
+        model_run_id = duration_prediction_flow(year=args.year, month=args.month)
         print("\nPipeline completed successfully!")
-        print(f"MLflow run_id: {run_id}")
+        print(f"MLflow run_id: {model_run_id}")
         print(f"View results at: {mlflow.get_tracking_uri()}")
+        print(f"Model registered in MLflow Model Registry: nyc-taxi-duration-predictor")
 
         # Save run ID for reference
         with open("prefect_run_id.txt", "w") as f:
-            f.write(run_id)
+            f.write(model_run_id)
             
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")

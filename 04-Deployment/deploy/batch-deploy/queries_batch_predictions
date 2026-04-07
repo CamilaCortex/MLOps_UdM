@@ -1,0 +1,62 @@
+# Total de Predicciones por Día
+SELECT 
+    DATE(prediction_timestamp) as fecha,
+    COUNT(*) as total_predicciones,
+    COUNT(DISTINCT batch_id) as total_batches
+FROM predictions
+GROUP BY DATE(prediction_timestamp)
+ORDER BY fecha DESC;
+
+
+# 2. Métricas de Calidad del Modelo
+#Distribución de Predicciones (Últimos 7 días)
+SELECT 
+    CASE 
+        WHEN predicted_duration_minutes < 10 THEN '0-10 min'
+        WHEN predicted_duration_minutes < 20 THEN '10-20 min'
+        WHEN predicted_duration_minutes < 30 THEN '20-30 min'
+        ELSE '30+ min'
+    END as rango_duracion,
+    COUNT(*) as cantidad,
+    ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM predictions WHERE prediction_timestamp >= datetime('now', '-7 days')), 2) as porcentaje
+FROM predictions
+WHERE prediction_timestamp >= datetime('now', '-7 days')
+GROUP BY rango_duracion
+ORDER BY rango_duracion;
+
+
+# Estadísticas por Versión de Modelo
+SELECT 
+    model_version,
+    COUNT(*) as total_predicciones,
+    ROUND(AVG(predicted_duration_minutes), 2) as duracion_promedio,
+    ROUND(MIN(predicted_duration_minutes), 2) as duracion_minima,
+    ROUND(MAX(predicted_duration_minutes), 2) as duracion_maxima,
+    ROUND(AVG(predicted_duration_minutes) - LAG(AVG(predicted_duration_minutes)) OVER (ORDER BY model_version), 2) as cambio_vs_anterior
+FROM predictions
+GROUP BY model_version
+ORDER BY model_version DESC;
+
+
+# predicciones anomalas
+WITH stats AS (
+    SELECT 
+        AVG(predicted_duration_minutes) as media,
+        AVG(predicted_duration_minutes) + 3 * (
+            AVG(predicted_duration_minutes * predicted_duration_minutes) - 
+            AVG(predicted_duration_minutes) * AVG(predicted_duration_minutes)
+        ) as limite_superior
+    FROM predictions
+)
+SELECT 
+    p.batch_id,
+    p.predicted_duration_minutes,
+    p.trip_distance,
+    p.PULocationID,
+    p.DOLocationID,
+    ROUND((p.predicted_duration_minutes - s.media) / s.media * 100, 2) as desviacion_porcentual
+FROM predictions p, stats s
+WHERE p.predicted_duration_minutes > s.limite_superior
+ORDER BY p.predicted_duration_minutes DESC;
+
+
