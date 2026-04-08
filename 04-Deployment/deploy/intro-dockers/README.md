@@ -1,24 +1,24 @@
-# 🐱 Práctica de Docker - App de Gatitos
+# Práctica de Docker - App de Gatitos
 
 Aprende Docker desde cero creando y dockerizando una aplicación web que muestra fotos aleatorias de gatitos.
 
-## 🎯 Objetivos
+## Objetivos
 
-1. ✅ Ejecutar una app web local
-2. ✅ Entender qué es Docker y para qué sirve
-3. ✅ Crear un Dockerfile
-4. ✅ Construir una imagen Docker
-5. ✅ Ejecutar un contenedor
-6. ✅ Comparar local vs Docker
+1. Ejecutar una app web local
+2. Entender qué es Docker y para qué sirve
+3. Crear un Dockerfile
+4. Construir una imagen Docker
+5. Ejecutar un contenedor
+6. Comparar local vs Docker
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 practica-gatitos/
-├── app.py              # ⭐ App LOCAL (versión simple)
-├── app_docker.py       # ⭐ App DOCKER (optimizada para contenedores)
+├── app.py              # App LOCAL (versión simple)
+├── app_docker.py       # App DOCKER (optimizada para contenedores)
 ├── requirements.txt    # Dependencias: FastAPI + Uvicorn
 ├── Dockerfile          # Instrucciones para crear la imagen
 ├── .dockerignore       # Archivos a ignorar
@@ -30,7 +30,7 @@ practica-gatitos/
 
 ---
 
-# 🚀 PARTE 1: App Local (Sin Docker)
+# PARTE 1: App Local (Sin Docker)
 
 ## ¿Por Qué Empezar Sin Docker?
 
@@ -52,13 +52,14 @@ cd MLOps_UdM/04-Deployment/deploy/intro-dockers
 ## Paso 3: Instalar Dependencias
 
 ```bash
-# Con uv (recomendado)
-uv add fastapi uvicorn[standard] jinja2 o 
+# Con uv (recomendado) - Usa comillas para evitar error en zsh
 uv add fastapi "uvicorn[standard]" jinja2
 
 # O con pip
 pip install -r requirements.txt
 ```
+
+> **Nota para usuarios de zsh:** Si usas zsh (shell por defecto en Mac), debes usar comillas alrededor de `uvicorn[standard]` para evitar el error "no matches found".
 
 ## Paso 4: Ejecutar la App Local
 
@@ -68,9 +69,9 @@ uv run python app.py
 
 **Salida esperada**:
 ```
-🐱 Iniciando Gatitos App...
-📍 Abre tu navegador en: http://127.0.0.1:5000
-⏹️  Para detener: Ctrl+C
+Iniciando Gatitos App...
+Abre tu navegador en: http://127.0.0.1:5000
+Para detener: Ctrl+C
  * Running on http://127.0.0.1:5000
 ```
 
@@ -79,14 +80,14 @@ uv run python app.py
 Abre: **http://127.0.0.1:5000**
 
 Deberías ver:
-- 🐱 Foto aleatoria de un gatito
-- 💻 Badge verde "Corriendo Localmente"
-- 🔄 Botón "Otro gatito"
+- Foto aleatoria de un gatito
+- Badge verde "Corriendo Localmente"
+- Botón "Otro gatito"
 - Texto "¡Aplicación web con FastAPI!"
 
 ## Paso 6: Probar la App
 
-1. Click en "🔄 Otro gatito" → Cambia la imagen
+1. Click en "Otro gatito" → Cambia la imagen
 2. Recarga la página → Otro gatito diferente
 3. Ir a http://127.0.0.1:5000/health → Ver endpoint de salud
 
@@ -96,7 +97,7 @@ Presiona `Ctrl+C` en la terminal
 
 ---
 
-## 🤔 Problemas de la App Local
+## Problemas de la App Local
 
 | Problema | Descripción |
 |----------|-------------|
@@ -106,11 +107,11 @@ Presiona `Ctrl+C` en la terminal
 | **Configuración** | Necesitas Python instalado |
 | **"En mi máquina funciona"** | Clásico problema de desarrollo |
 
-**💡 Docker resuelve todos estos problemas!**
+**Docker resuelve todos estos problemas.**
 
 ---
 
-# 🐳 PARTE 2: Dockerizar la App
+# PARTE 2: Dockerizar la App
 
 ## ¿Qué es Docker?
 

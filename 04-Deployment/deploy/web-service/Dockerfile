@@ -1,22 +1,25 @@
 # Imagen base de Python
 FROM python:3.11-slim
 
-# Instalar UV
-RUN pip install --no-cache-dir uv
-
 # Directorio de trabajo
 WORKDIR /app
 
 # Copiar archivos de configuración
 COPY pyproject.toml ./
 
-# Instalar dependencias
-RUN uv sync --no-dev
+# Instalar dependencias directamente con pip
+RUN pip install --no-cache-dir \
+    fastapi==0.115.0 \
+    uvicorn[standard]==0.32.0 \
+    pydantic==2.9.2 \
+    mlflow==2.17.2 \
+    xgboost==2.1.2 \
+    scikit-learn==1.5.2
 
 # Copiar código fuente
 COPY app.py ./
 COPY src/ ./src/
-COPY config/ ./config/
+COPY templates/ ./templates/
 
 # Copiar modelo (debe existir antes de build)
 COPY model/ ./model/
@@ -25,4 +28,4 @@ COPY model/ ./model/
 EXPOSE 8000
 
 # Comando para iniciar la API
-CMD ["uv", "run", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

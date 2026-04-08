@@ -1,5 +1,5 @@
 [project]
-name = "web-service-docker"
+name = "web-service-docker-aws"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

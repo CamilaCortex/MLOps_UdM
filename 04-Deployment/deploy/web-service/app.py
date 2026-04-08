@@ -2,8 +2,10 @@
 API REST con FastAPI para predicción de duración de viajes de taxi.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 import logging
 
 from src.schemas import (
@@ -23,6 +25,9 @@ app = FastAPI(
     description="API para predecir la duración de viajes de taxi en NYC",
     version="1.0.0"
 )
+
+# Templates
+templates = Jinja2Templates(directory="templates")
 
 # CORS
 app.add_middleware(
@@ -46,19 +51,10 @@ async def startup_event():
         raise
 
 
-@app.get("/")
-async def root():
-    """Endpoint raíz"""
-    return {
-        "message": "NYC Taxi Duration Prediction API",
-        "version": "1.0.0",
-        "endpoints": {
-            "health": "/health",
-            "predict": "/predict",
-            "predict_batch": "/predict/batch",
-            "docs": "/docs"
-        }
-    }
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """Interfaz web para hacer predicciones"""
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 @app.get("/health", response_model=HealthResponse)

@@ -27,4 +27,5 @@ dependencies = [
 members = [
     "04-Deployment/deploy/web-service",
     "04-Deployment/deploy/batch-deploy",
+    "04-Deployment/deploy/web-service-aws",
 ]
