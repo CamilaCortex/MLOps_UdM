@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚕 NYC Taxi - Predicción de Duración</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 1em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f7ff;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .result p {
+            color: #555;
+            line-height: 1.6;
+            margin: 5px 0;
+        }
+        
+        .duration {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .error {
+            background: #ffe0e0;
+            border-left-color: #ff4444;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #667eea;
+            display: none;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        
+        .info-box strong {
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚕 NYC Taxi Predictor</h1>
+        <p class="subtitle">Predice la duración de tu viaje en taxi</p>
+        
+        <div class="info-box">
+            <strong>💡 Tip:</strong> Ingresa las zonas de recogida y destino (1-265) y la distancia del viaje.
+        </div>
+        
+        <form id="predictionForm">
+            <div class="form-group">
+                <label for="pickup">📍 Zona de Recogida (PULocationID)</label>
+                <input type="number" id="pickup" name="pickup" min="1" max="265" value="161" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="dropoff">🎯 Zona de Destino (DOLocationID)</label>
+                <input type="number" id="dropoff" name="dropoff" min="1" max="265" value="236" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="distance">📏 Distancia del Viaje (millas)</label>
+                <input type="number" id="distance" name="distance" min="0.1" max="100" step="0.1" value="5.2" required>
+            </div>
+            
+            <button type="submit" class="btn">🔮 Predecir Duración</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            ⏳ Calculando predicción...
+        </div>
+        
+        <div class="result" id="result">
+            <h3>✅ Predicción Completada</h3>
+            <div class="duration" id="duration"></div>
+            <p><strong>Zona de Recogida:</strong> <span id="resultPickup"></span></p>
+            <p><strong>Zona de Destino:</strong> <span id="resultDropoff"></span></p>
+            <p><strong>Distancia:</strong> <span id="resultDistance"></span> millas</p>
+            <p><strong>Modelo:</strong> <span id="modelInfo"></span></p>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('predictionForm');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Mostrar loading
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            // Obtener valores del formulario
+            const pickup = document.getElementById('pickup').value;
+            const dropoff = document.getElementById('dropoff').value;
+            const distance = document.getElementById('distance').value;
+            
+            try {
+                // Hacer request a la API
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        PULocationID: parseInt(pickup),
+                        DOLocationID: parseInt(dropoff),
+                        trip_distance: parseFloat(distance)
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Error en la predicción');
+                }
+                
+                const data = await response.json();
+                
+                // Mostrar resultado
+                document.getElementById('duration').textContent = 
+                    `⏱️ ${data.predicted_duration_minutes.toFixed(2)} minutos`;
+                document.getElementById('resultPickup').textContent = data.PULocationID;
+                document.getElementById('resultDropoff').textContent = data.DOLocationID;
+                document.getElementById('resultDistance').textContent = data.trip_distance;
+                document.getElementById('modelInfo').textContent = 
+                    `${data.model_name} v${data.model_version}`;
+                
+                result.classList.remove('error');
+                result.classList.add('show');
+                
+            } catch (error) {
+                // Mostrar error
+                result.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>No se pudo realizar la predicción. Por favor, verifica los datos e intenta de nuevo.</p>
+                `;
+                result.classList.add('error');
+                result.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
