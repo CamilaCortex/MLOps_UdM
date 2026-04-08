@@ -1,0 +1,174 @@
+{
+  "info": {
+    "name": "NYC Taxi Duration API",
+    "description": "API para predicción de duración de viajes de taxi en NYC",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Root - API Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        },
+        "description": "Obtiene información general de la API"
+      }
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Verifica el estado de salud de la API y el modelo"
+      }
+    },
+    {
+      "name": "Predict - Single Trip",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"PULocationID\": 161,\n  \"DOLocationID\": 236,\n  \"trip_distance\": 5.2\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/predict",
+          "host": ["{{base_url}}"],
+          "path": ["predict"]
+        },
+        "description": "Predice la duración de un viaje individual"
+      }
+    },
+    {
+      "name": "Predict - Short Trip",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"PULocationID\": 161,\n  \"DOLocationID\": 236,\n  \"trip_distance\": 1.5\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/predict",
+          "host": ["{{base_url}}"],
+          "path": ["predict"]
+        },
+        "description": "Predicción de viaje corto (1.5 millas)"
+      }
+    },
+    {
+      "name": "Predict - Medium Trip",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"PULocationID\": 237,\n  \"DOLocationID\": 238,\n  \"trip_distance\": 7.5\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/predict",
+          "host": ["{{base_url}}"],
+          "path": ["predict"]
+        },
+        "description": "Predicción de viaje mediano (7.5 millas)"
+      }
+    },
+    {
+      "name": "Predict - Long Trip",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"PULocationID\": 100,\n  \"DOLocationID\": 200,\n  \"trip_distance\": 20.0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/predict",
+          "host": ["{{base_url}}"],
+          "path": ["predict"]
+        },
+        "description": "Predicción de viaje largo (20 millas)"
+      }
+    },
+    {
+      "name": "Predict - Batch (3 trips)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"trips\": [\n    {\n      \"PULocationID\": 161,\n      \"DOLocationID\": 236,\n      \"trip_distance\": 5.2\n    },\n    {\n      \"PULocationID\": 237,\n      \"DOLocationID\": 238,\n      \"trip_distance\": 3.8\n    },\n    {\n      \"PULocationID\": 100,\n      \"DOLocationID\": 200,\n      \"trip_distance\": 15.0\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/predict/batch",
+          "host": ["{{base_url}}"],
+          "path": ["predict", "batch"]
+        },
+        "description": "Predicción batch de 3 viajes"
+      }
+    },
+    {
+      "name": "Predict - Batch (10 trips)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"trips\": [\n    {\"PULocationID\": 161, \"DOLocationID\": 236, \"trip_distance\": 5.2},\n    {\"PULocationID\": 237, \"DOLocationID\": 238, \"trip_distance\": 3.8},\n    {\"PULocationID\": 100, \"DOLocationID\": 200, \"trip_distance\": 15.0},\n    {\"PULocationID\": 142, \"DOLocationID\": 163, \"trip_distance\": 8.5},\n    {\"PULocationID\": 239, \"DOLocationID\": 161, \"trip_distance\": 4.2},\n    {\"PULocationID\": 164, \"DOLocationID\": 229, \"trip_distance\": 12.0},\n    {\"PULocationID\": 186, \"DOLocationID\": 170, \"trip_distance\": 6.8},\n    {\"PULocationID\": 132, \"DOLocationID\": 265, \"trip_distance\": 18.5},\n    {\"PULocationID\": 68, \"DOLocationID\": 90, \"trip_distance\": 2.3},\n    {\"PULocationID\": 230, \"DOLocationID\": 48, \"trip_distance\": 9.7}\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/predict/batch",
+          "host": ["{{base_url}}"],
+          "path": ["predict", "batch"]
+        },
+        "description": "Predicción batch de 10 viajes"
+      }
+    }
+  ]
+}
