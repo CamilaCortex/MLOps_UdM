@@ -139,7 +139,11 @@ Thumbs.db
 desktop.ini
 
 # --- Agentes de codigo ---
-.claude/
+# Se ignora todo salvo los slash commands: esos son configuracion del curso, se
+# comparten entre instructores y no traen nada de la maquina de cada quien
+# (a diferencia de settings.local.json, que guarda permisos locales).
+.claude/*
+!.claude/commands/
 
 # --- Terraform (si se agrega IaC) ---
 .terraform/
