@@ -143,7 +143,7 @@ source .venv/bin/activate  # En Windows: .venv\Scripts\activate
 # Explorar los módulos
 cd 01-Intro-ML          # Empezar por aquí
 cd 02-Experiment-Tracking
-cd 03-Orchestrarion
+cd 03-Orchestration
 cd 04-Deployment
 cd 05-Monitoring
 ```
@@ -154,7 +154,7 @@ cd 05-Monitoring
 MLOps_UdM/
 ├── 01-Intro-ML/                    # Setup y fundamentos
 ├── 02-Experiment-Tracking/         # MLflow tracking
-├── 03-Orchestrarion/               # Prefect pipelines
+├── 03-Orchestration/               # Prefect pipelines
 │   ├── 00-intro-prefect/          # Conceptos básicos
 │   └── Prefect-pipelines/         # Proyecto NYC Taxi
 ├── 04-Deployment/                  # Deployment de modelos
