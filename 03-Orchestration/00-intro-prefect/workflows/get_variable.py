@@ -1,8 +1,12 @@
 from prefect.variables import Variable
 
 
-# firt time Variable.set("answer", 28)
-var = Variable.get("answer")  # answer is a variable set in the UI or code
-print(var)
+# La primera vez, crea la variable desde la UI de Prefect o con:
+#   Variable.set("answer", 28)
+var = Variable.get("answer", default=None)
 
-
+if var is None:
+    print("La variable 'answer' no existe todavia. Creala en la UI de Prefect "
+          "(Variables) o ejecuta Variable.set('answer', 28) antes de correr este script.")
+else:
+    print(var)

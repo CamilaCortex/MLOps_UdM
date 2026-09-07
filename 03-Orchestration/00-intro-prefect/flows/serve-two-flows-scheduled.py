@@ -2,13 +2,13 @@ import time
 from prefect import flow, serve
 
 
-@flow
+@flow(log_prints=True)
 def slow_flow(sleep: int = 60):
     "Sleepy flow - sleeps the provided amount of time (in seconds)."
     time.sleep(sleep)
 
 
-@flow
+@flow(log_prints=True)
 def fast_flow():
     "Fastest flow this side of the Atlantic."
     return

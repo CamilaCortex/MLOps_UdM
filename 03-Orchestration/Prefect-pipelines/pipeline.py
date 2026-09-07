@@ -9,7 +9,7 @@ import mlflow
 from prefect import flow, get_run_logger
 from prefect.artifacts import create_markdown_artifact
 
-from src.config import setup_mlflow, DEFAULT_YEAR, DEFAULT_MONTH, TARGET_COLUMN, MLFLOW_EXPERIMENT_NAME
+from src.config import setup_mlflow, DEFAULT_YEAR, DEFAULT_MONTH, TARGET_COLUMN, MLFLOW_EXPERIMENT_NAME, MLFLOW_UI_URL
 from src.data import read_dataframe, validate_data, calculate_next_period
 from src.features import create_features
 from src.models import optimize_hyperparameters, train_model, register_best_model
@@ -88,8 +88,6 @@ def duration_prediction_flow(year: int = None, month: int = None) -> str:
     logger.info(f"Model registered as version {model_version}")
 
     # Create final pipeline artifact with enhanced information
-    mlflow_ui_url = mlflow.get_tracking_uri().replace('sqlite:///', 'http://localhost:5000/')
-    
     pipeline_summary = f"""
     # Pipeline Execution Summary
 
@@ -102,19 +100,20 @@ def duration_prediction_flow(year: int = None, month: int = None) -> str:
 
     ## Results
     - **RMSE**: {rmse:.4f}
-    - **MLflow Run ID**: [{model_run_id}]({mlflow_ui_url})
+    - **MLflow Run ID**: [{model_run_id}]({MLFLOW_UI_URL})
     - **MLflow Experiment**: {MLFLOW_EXPERIMENT_NAME}
     - **Registered Model**: nyc-taxi-duration-predictor v{model_version}
 
     ## Next Steps
-    1. [Review model in MLflow Model Registry]({mlflow_ui_url}/#/models/nyc-taxi-duration-predictor)
-    2. Transition model to **Staging** or **Production** stage
+    1. [Review model in MLflow Model Registry]({MLFLOW_UI_URL}/#/models/nyc-taxi-duration-predictor)
+    2. La version se registra con el alias "candidate"; solo se promueve a "champion"
+       si mejora el RMSE del champion actual (ver register_best_model)
     3. Use deployment module to serve the registered model
     4. Compare with previous model versions
-    
+
     ## Quick Links
     - [Prefect Cloud Dashboard](https://app.prefect.cloud)
-    - [MLflow Tracking UI]({mlflow_ui_url})
+    - [MLflow Tracking UI]({MLFLOW_UI_URL})
     """
 
     create_markdown_artifact(

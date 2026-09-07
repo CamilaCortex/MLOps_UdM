@@ -14,7 +14,7 @@ from sklearn.metrics import root_mean_squared_error
 from prefect import task, get_run_logger
 from prefect.artifacts import create_table_artifact, create_markdown_artifact
 
-from ..config import OPTUNA_TRIALS
+from ..config import OPTUNA_TRIALS, MLFLOW_UI_URL
 
 
 @task(name="optimize_hyperparameters", description="Optimize XGBoost hyperparameters using Optuna")
@@ -102,7 +102,7 @@ def optimize_hyperparameters(X_train, y_train, X_val, y_val) -> Dict:
             best_run_id = runs.iloc[0]['run_id']
             with mlflow.start_run(run_id=best_run_id):
                 mlflow.set_tag("best_trial", "true")
-                mlflow.set_tag("best_of_optimization", "⭐ BEST TRIAL")
+                mlflow.set_tag("best_of_optimization", "BEST_TRIAL")
                 mlflow.set_tag("rank", "1")
                 logger.info(f"Marked run {best_run_id} as best trial")
     
@@ -213,10 +213,9 @@ def train_model(X_train, y_train, X_val, y_val, dv: DictVectorizer, best_params:
         y_pred = booster.predict(valid)
         rmse = root_mean_squared_error(y_val, y_pred)
         mlflow.log_metric("rmse", rmse)
-        
-        # Log RMSE without comparison
-        previous_best_rmse = None
-        improvement = None
+
+        # La comparacion contra el mejor modelo ya registrado (el "champion")
+        # se hace en register_best_model, que si tiene acceso al Model Registry.
 
         # Save preprocessor
         preprocessor_path = "models/preprocessor.b"
@@ -247,27 +246,15 @@ def train_model(X_train, y_train, X_val, y_val, dv: DictVectorizer, best_params:
             description=f"Model performance metrics - RMSE: {rmse:.4f}"
         )
 
-        # Create enhanced markdown artifact with comparison
-        comparison_section = ""
-        if previous_best_rmse is not None:
-            comparison_section = f"""
-        ## Performance Comparison
-        - **Current RMSE**: {rmse:.4f}
-        - **Previous Best**: {previous_best_rmse:.4f}
-        - **Improvement**: {improvement:+.2f}%
-        - **Status**: {'NEW BEST' if rmse < previous_best_rmse else 'Not improved'}
-        """
-        
-        mlflow_ui_url = mlflow.get_tracking_uri().replace('sqlite:///', 'http://localhost:5000/')
-        
+        # Nota: la comparacion contra el champion actual se muestra en el
+        # artifact que crea register_best_model, una vez el modelo se
+        # registra en el Model Registry.
         markdown_content = f"""
         # Model Training Summary
 
         ## Performance
         - **RMSE**: {rmse:.4f}
-        - **MLflow Run ID**: [{run.info.run_id}]({mlflow_ui_url})
-
-        {comparison_section}
+        - **MLflow Run ID**: [{run.info.run_id}]({MLFLOW_UI_URL})
 
         ## Model Configuration
         - **Learning Rate**: {best_params['learning_rate']:.6f}

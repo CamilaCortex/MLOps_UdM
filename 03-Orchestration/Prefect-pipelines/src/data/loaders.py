@@ -10,7 +10,6 @@ import pandas as pd
 from prefect import task, get_run_logger
 from prefect.artifacts import create_table_artifact, create_link_artifact
 from prefect.tasks import task_input_hash
-from prefect.results import ResultRecord
 
 from ..config import CATEGORICAL_FEATURES, MIN_DURATION, MAX_DURATION
 

@@ -120,8 +120,8 @@ uv sync   # uv detecta el cambio y reconstruye el entorno
 
 | Archivo | Propósito | ¿Se hace commit? |
 |---|---|---|
-| `pyproject.toml` | Dependencias declaradas con rangos de versión | ✅ Sí |
-| `uv.lock` | Versiones y hashes exactos de cada paquete | ✅ Sí |
+| `pyproject.toml` | Dependencias declaradas con rangos de versión | Sí |
+| `uv.lock` | Versiones y hashes exactos de cada paquete | Sí |
 
 El `uv.lock` es **universal**: funciona en Windows, macOS y Linux desde el mismo archivo, a diferencia de un `requirements.txt` generado con `pip freeze` que es específico de la plataforma.
 
@@ -215,7 +215,7 @@ uv remove requests
 # Actualizar una dependencia específica
 uv update pandas
 
-# ⚠️ PRECAUCIÓN con uv update
+# IMPORTANTE: precaución con uv update
 # Antes de actualizar, siempre:
 # 1. Lee las notas de la nueva versión (changelog, breaking changes)
 # 2. Verifica compatibilidad con Semantic Versioning (MAJOR.MINOR.PATCH)
@@ -414,17 +414,17 @@ uv sync
 
 | Comando | ¿Qué hace? | ¿Modifica pyproject.toml? |
 |---|---|---|
-| `uv init` | Crea un nuevo proyecto | ✅ Lo crea |
-| `uv add <pkg>` | Agrega dependencia permanente | ✅ Sí |
-| `uv remove <pkg>` | Elimina dependencia | ✅ Sí |
-| `uv pip install <pkg>` | Instala sin registrar | ❌ No |
-| `uv sync` | Sincroniza entorno con lockfile | ❌ No |
-| `uv run <cmd>` | Ejecuta en el entorno del proyecto | ❌ No |
-| `uv lock` | Regenera el lockfile | ❌ No |
-| `uv update <pkg>` | Actualiza dependencia | ✅ Sí |
-| `uv python install X` | Instala versión de Python | ❌ No |
-| `uv python pin X` | Fija versión en `.python-version` | ❌ No* |
-| `uv tool install <tool>` | Instala herramienta global | ❌ No |
+| `uv init` | Crea un nuevo proyecto | Si Lo crea |
+| `uv add <pkg>` | Agrega dependencia permanente | Sí |
+| `uv remove <pkg>` | Elimina dependencia | Sí |
+| `uv pip install <pkg>` | Instala sin registrar | No |
+| `uv sync` | Sincroniza entorno con lockfile | No |
+| `uv run <cmd>` | Ejecuta en el entorno del proyecto | No |
+| `uv lock` | Regenera el lockfile | No |
+| `uv update <pkg>` | Actualiza dependencia | Sí |
+| `uv python install X` | Instala versión de Python | No |
+| `uv python pin X` | Fija versión en `.python-version` | No* |
+| `uv tool install <tool>` | Instala herramienta global | No |
 
 *Escribe `.python-version`, no `pyproject.toml`
 

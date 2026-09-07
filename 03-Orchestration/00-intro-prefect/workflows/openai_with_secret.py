@@ -7,16 +7,19 @@ from openai import OpenAI
 def call_llm(prompt: str):
     # Obtener el secret desde Prefect Cloud
     api_key = Secret.load("openai-api-key").get()
-    
+
     # Cliente de OpenAI
     client = OpenAI(api_key=api_key)
-    
+
     # Hacer el prompt
+    # Nota: los modelos disponibles en la API de OpenAI cambian con frecuencia
+    # (gpt-3.5-turbo ya fue retirado). Verifica en https://platform.openai.com/docs/models
+    # cual es el modelo economico vigente antes de usar este script en clase.
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-5-mini",
         messages=[{"role": "user", "content": prompt}]
     )
-    
+
     answer = response.choices[0].message.content
     print(f"Respuesta: {answer}")
     return answer

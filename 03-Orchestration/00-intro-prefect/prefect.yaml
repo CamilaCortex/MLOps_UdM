@@ -1,7 +1,14 @@
 name: weather-flows
+
+# Antes de desplegar, define la variable de entorno con la ruta absoluta de
+# esta carpeta (00-intro-prefect). Ejemplo, ejecutado desde esta misma carpeta:
+#   export PREFECT_PROJECT_DIR=$(pwd)
+#
+# Esto evita dejar una ruta personal fija en el repositorio: cada estudiante
+# usa la ruta de su propia maquina.
 pull:
   - prefect.deployments.steps.set_working_directory:
-      directory: /Users/mdurango/Downloads/proyectos/MLOps_UdM/03-Orchestration/00-intro-prefect
+      directory: "{{ $PREFECT_PROJECT_DIR }}"
 
 deployments:
   - name: simple-flow-deployment
@@ -22,5 +29,5 @@ deployments:
       lat: 4.7110
       lon: -74.0721
 
-# prefect deploy --all   
+# prefect deploy --all
 # prefect deployment ls

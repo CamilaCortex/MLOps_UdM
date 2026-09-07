@@ -4,18 +4,22 @@ Deployment configuration for NYC Taxi Duration Prediction Pipeline.
 Runs every 2 minutes for learning purposes.
 """
 
+import logging
+
 from pipeline import duration_prediction_flow
 from src.config import DEFAULT_YEAR, DEFAULT_MONTH
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    print("\n🚀 Starting learning deployment (every 2 minutes)...")
-    print("   Name: learning-training")
-    print("   Schedule: */2 * * * *")
-    print("   Timezone: America/Bogota")
-    print(f"   Default year: {DEFAULT_YEAR}")
-    print(f"   Default month: {DEFAULT_MONTH}")
-    
+    logger.info("Starting learning deployment (every 2 minutes)...")
+    logger.info("Name: learning-training")
+    logger.info("Schedule: */2 * * * *")
+    logger.info("Timezone: America/Bogota")
+    logger.info(f"Default year: {DEFAULT_YEAR}")
+    logger.info(f"Default month: {DEFAULT_MONTH}")
+
     # Serve the flow with schedule
     duration_prediction_flow.serve(
         name="learning-training",
@@ -27,16 +31,16 @@ if __name__ == "__main__":
             "month": DEFAULT_MONTH
         }
     )
-    
-    print("\n✅ Deployment is now running!")
-    print("\n📋 The server is running and will execute the flow:")
-    print("   - Every 2 minutes automatically")
-    print("   - Press Ctrl+C to stop")
-    print("\n� View executions at:")
-    print("   - Prefect Cloud: https://app.prefect.cloud")
-    print("   - Or local UI: http://localhost:4200")
-    print("\n⏰ Next executions will be at:")
-    print("   - In 2 minutes")
-    print("   - In 4 minutes")
-    print("   - In 6 minutes")
-    print("   - And so on...")
+
+    logger.info("Deployment is now running.")
+    logger.info("The server is running and will execute the flow:")
+    logger.info("  - Every 2 minutes automatically")
+    logger.info("  - Press Ctrl+C to stop")
+    logger.info("View executions at:")
+    logger.info("  - Prefect Cloud: https://app.prefect.cloud")
+    logger.info("  - Or local UI: http://localhost:4200")
+    logger.info("Next executions will be at:")
+    logger.info("  - In 2 minutes")
+    logger.info("  - In 4 minutes")
+    logger.info("  - In 6 minutes")
+    logger.info("  - And so on...")

@@ -39,7 +39,7 @@ def create_metrics_summary(metrics: dict):
     """Crea un artifact de markdown con resumen de métricas."""
     
     markdown_content = f"""
-# 📊 Model Training Summary
+# Model Training Summary
 
 ## Performance Metrics
 
@@ -58,7 +58,7 @@ def create_metrics_summary(metrics: dict):
 
 ## Status
 
-✅ Model trained successfully!
+Model trained successfully.
 
 ### Next Steps
 1. Validate on test set
@@ -189,16 +189,16 @@ def create_validation_results():
     """Crea resumen de validación del modelo."""
     
     markdown_content = """
-# 🎯 Model Validation Results
+# Model Validation Results
 
 ## Data Quality Checks
 
 | Check | Status | Details |
 |-------|--------|---------|
-| Null Values | ✅ Pass | < 10% threshold |
-| Sample Size | ✅ Pass | 46,307 records |
-| Feature Count | ✅ Pass | 448 features |
-| Target Distribution | ✅ Pass | Normal distribution |
+| Null Values | Pass | < 10% threshold |
+| Sample Size | Pass | 46,307 records |
+| Feature Count | Pass | 448 features |
+| Target Distribution | Pass | Normal distribution |
 
 ## Performance on Validation Set
 
@@ -211,13 +211,13 @@ def create_validation_results():
 
 | Metric | Current | Baseline | Improvement |
 |--------|---------|----------|-------------|
-| RMSE | 7.15 | 7.82 | 🟢 8.6% |
-| MAE | 5.23 | 5.91 | 🟢 11.5% |
-| R² | 0.823 | 0.746 | 🟢 10.3% |
+| RMSE | 7.15 | 7.82 | +8.6% |
+| MAE | 5.23 | 5.91 | +11.5% |
+| R² | 0.823 | 0.746 | +10.3% |
 
 ## Recommendation
 
-✅ **APPROVED FOR DEPLOYMENT**
+**APPROVED FOR DEPLOYMENT**
 
 Model shows consistent improvement over baseline across all metrics.
 Ready for A/B testing in production.
@@ -236,38 +236,38 @@ def ml_artifacts_flow():
     Flow que demuestra el uso de artifacts para ML workflows.
     
     Ejecuta este flow y ve los artifacts en Prefect Cloud:
-    - Flow Runs → [tu run] → Artifacts tab
+    - Flow Runs -> [tu run] -> Artifacts tab
     """
     logger = get_run_logger()
     
-    logger.info("🚀 Starting ML Artifacts Demo")
+    logger.info("Starting ML Artifacts Demo")
     
     # 1. Entrenar modelo (simulado)
     metrics = train_model_simulation()
     
     # 2. Crear artifacts de métricas
-    logger.info("📊 Creating metrics artifacts...")
+    logger.info("Creating metrics artifacts...")
     create_metrics_summary(metrics)
     create_metrics_table(metrics)
     
     # 3. Crear tabla de hiperparámetros
-    logger.info("⚙️ Creating hyperparameters artifact...")
+    logger.info("Creating hyperparameters artifact...")
     create_hyperparameters_table()
     
     # 4. Crear links a recursos
-    logger.info("🔗 Creating resource links...")
+    logger.info("Creating resource links...")
     create_model_links()
     
     # 5. Crear tabla de feature importance
-    logger.info("📈 Creating feature importance artifact...")
+    logger.info("Creating feature importance artifact...")
     create_feature_importance_table()
     
     # 6. Crear resumen de validación
-    logger.info("✅ Creating validation results...")
+    logger.info("Creating validation results...")
     create_validation_results()
     
-    logger.info("🎉 All artifacts created successfully!")
-    logger.info("📱 View them in Prefect Cloud → Flow Runs → Artifacts tab")
+    logger.info("All artifacts created successfully.")
+    logger.info("View them in Prefect Cloud: Flow Runs -> Artifacts tab")
     
     return {
         "status": "success",
@@ -281,13 +281,13 @@ if __name__ == "__main__":
     result = ml_artifacts_flow()
     
     print("\n" + "="*60)
-    print("✅ Flow completed!")
+    print("Flow completed!")
     print("="*60)
     print(f"\nResult: {result}")
-    print("\n📱 Go to Prefect Cloud to see the artifacts:")
+    print("\nGo to Prefect Cloud to see the artifacts:")
     print("   https://app.prefect.cloud")
-    print("\n💡 Navigate to:")
-    print("   Flow Runs → ml-artifacts-demo → Artifacts tab")
+    print("\nNavigate to:")
+    print("   Flow Runs -> ml-artifacts-demo -> Artifacts tab")
     print("\nYou should see 7 artifacts:")
     print("   1. Model Training Summary (markdown)")
     print("   2. Metrics Comparison (table)")

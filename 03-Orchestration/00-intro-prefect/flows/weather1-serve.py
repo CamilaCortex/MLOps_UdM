@@ -2,7 +2,7 @@ import httpx
 from prefect import flow
 
 
-@flow()
+@flow(log_prints=True)
 def fetch_weather(lat: float = 38.9, lon: float = -77.0):
     base_url = "https://api.open-meteo.com/v1/forecast/"
     temps = httpx.get(
