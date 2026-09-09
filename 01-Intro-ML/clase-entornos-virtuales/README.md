@@ -186,7 +186,7 @@ Este es el comando que la profe más recomienda para quienes están empezando, p
 uv run python main.py
 
 # Ejecutar con dependencias del grupo de desarrollo
-uv run --with dev python main.py
+uv run --group dev python main.py
 
 # Ejecutar una herramienta directamente
 uv run ruff check src/
@@ -276,7 +276,7 @@ uv sync
 uv sync --all-groups
 
 # Ejecutar con el grupo dev activo
-uv run --with dev pytest tests/
+uv run --group dev pytest tests/
 ```
 
 **Estructura resultante en `pyproject.toml`:**
