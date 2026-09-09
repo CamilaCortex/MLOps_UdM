@@ -410,6 +410,101 @@ uv sync
 
 ---
 
+## 14. Actividad de clase: arma tu primer proyecto reproducible
+
+Esta es la práctica central de la clase de entornos virtuales. Van a recorrer, con sus propias manos, el ciclo completo que acaban de ver en la teoría: crear un repositorio, iniciar un proyecto con una versión de Python específica, agregar una dependencia real, exponer un comando propio como alias, y comprobar que todo el entorno se puede reconstruir desde cero con un solo comando.
+
+**Formato:** equipos de 2-3 personas, en salas de Zoom.
+**Duración sugerida:** 25 minutos.
+
+### Paso 1 — Crear el repositorio
+
+```bash
+mkdir saludo-equipo
+cd saludo-equipo
+git init
+```
+
+### Paso 2 — Iniciar el proyecto con una versión de Python específica
+
+Usen `--package` para que `uv` genere una estructura instalable (la necesitamos para el alias del paso 4). Elijan una versión de Python distinta a la que usa el resto del curso (por ejemplo 3.12), para practicar que cada proyecto fija la suya sin depender de nada externo.
+
+```bash
+uv init --package . --python 3.12
+```
+
+Esto crea `pyproject.toml`, `.python-version`, y el código fuente en `src/saludo_equipo/__init__.py`.
+
+> **Nota:** si están practicando dentro de una carpeta que vive adentro de otro repositorio con su propio `pyproject.toml` (como pasa en este curso), verifiquen que su carpeta **no** haya quedado listada en `[tool.uv.workspace] members` de ese `pyproject.toml` de más arriba. Si queda ahí, `uv` va a intentar compartir un solo entorno entre los dos proyectos, y si las versiones de Python no coinciden, van a ver un error de "incompatible with the project's Python requirement" — un caso real que le pasó a la profe armando este mismo curso.
+
+### Paso 3 — Agregar una dependencia real
+
+```bash
+uv add rich
+```
+
+Revisen `pyproject.toml`: la dependencia quedó registrada ahí, y también en `uv.lock`.
+
+### Paso 4 — Escribir el script y exponerlo como alias
+
+Abran `src/saludo_equipo/__init__.py` y reemplacen su contenido. Usen `logging`, no `print` — es el estándar del curso.
+
+```python
+import logging
+
+from rich.console import Console
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
+console = Console()
+
+
+def main() -> None:
+    logger.info("Entorno reconstruido correctamente.")
+    console.print("[bold green]Hola desde el equipo, armado con uv[/bold green]")
+```
+
+`uv init --package` ya dejó configurado el alias en `pyproject.toml`:
+
+```toml
+[project.scripts]
+saludo-equipo = "saludo_equipo:main"
+```
+
+Sincronicen y corran el alias — sin activar el entorno a mano:
+
+```bash
+uv sync
+uv run saludo-equipo
+```
+
+### Paso 5 — Reconstruir el entorno desde cero
+
+La prueba real de reproducibilidad: borren el entorno y reconstrúyanlo solo a partir del lockfile.
+
+```bash
+rm -rf .venv
+uv sync
+uv run saludo-equipo
+```
+
+Si el alias vuelve a funcionar igual, el entorno es reproducible.
+
+### Paso 6 — Commit
+
+```bash
+git add pyproject.toml uv.lock src/
+git commit -m "feat: primer proyecto con uv"
+```
+
+**Entregable:** capturen pantalla del `uv run saludo-equipo` después de reconstruir el entorno (paso 5) y compártanla en la plenaria.
+
+### Reto extra, si sobra tiempo
+
+Agreguen un segundo alias al mismo proyecto (otra entrada en `[project.scripts]`, apuntando a otra función), y ejecútenlo con `uv run`. Un solo proyecto puede exponer varios comandos.
+
+---
+
 ## Resumen de comandos clave
 
 | Comando | ¿Qué hace? | ¿Modifica pyproject.toml? |
