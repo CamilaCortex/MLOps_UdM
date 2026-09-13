@@ -84,8 +84,19 @@ mlflow server \
   --host 127.0.0.1 \
   --port 5000 \
   --backend-store-uri sqlite:///mlflow.db \
-  --default-artifact-root ./mlruns
+  --default-artifact-root ./mlruns \
+  --allowed-hosts "localhost,127.0.0.1,127.0.0.1:5000"
 ```
+
+> **Nota (MLflow >= 3.5):** desde esta versión, el servidor valida el header `Host`
+> de cada request por defecto (protección contra DNS rebinding). Normalmente
+> `localhost`/`127.0.0.1` ya están permitidos, pero si tu máquina pasa por una VPN,
+> Docker, WSL o algún proxy que reescribe ese header, puedes ver un error
+> `403` como `API request to endpoint /api/2.0/mlflow/experiments/search failed
+> with error code 403`. El flag `--allowed-hosts` de arriba lo deja explícito y
+> evita el problema. Si aún así ves un 403, revisa con qué URL exacta se conecta
+> el notebook (`mlflow.get_tracking_uri()`) y agrega esa misma dirección (con y
+> sin puerto) a `--allowed-hosts`.
 
 Luego, en la terminal original:
 

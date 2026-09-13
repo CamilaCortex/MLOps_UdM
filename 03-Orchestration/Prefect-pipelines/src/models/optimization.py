@@ -224,12 +224,20 @@ def train_model(X_train, y_train, X_val, y_val, dv: DictVectorizer, best_params:
         
         try:
             mlflow.log_artifact(preprocessor_path, artifact_path="preprocessor")
-            # Log model using updated parameter name
-            mlflow.xgboost.log_model(booster, "models_mlflow")
+            mlflow.xgboost.log_model(booster, name="models_mlflow")
             logger.info("Successfully logged model and preprocessor to MLflow")
         except Exception as e:
-            logger.warning(f"Failed to log to MLflow: {e}")
-            logger.info("Model artifacts saved locally in models/ directory")
+            # No tragamos este error: si el modelo no queda loggeado aquí,
+            # register_best_model (el siguiente paso del pipeline) igual va
+            # a fallar al buscarlo en runs:/{run_id}/models_mlflow, pero con
+            # un error mucho más confuso y lejos de la causa real. Preferimos
+            # fallar en este punto, con contexto claro sobre qué run falló, y
+            # dejar que Prefect reintente la task (ya tiene retries=2).
+            logger.error(
+                f"Failed to log model/preprocessor to MLflow for run "
+                f"{run.info.run_id}: {e}"
+            )
+            raise
 
         # Create Prefect artifact with model performance
         performance_data = [

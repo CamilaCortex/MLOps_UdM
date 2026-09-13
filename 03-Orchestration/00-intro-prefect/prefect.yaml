@@ -12,7 +12,7 @@ pull:
 
 deployments:
   - name: simple-flow-deployment
-    entrypoint: flows/weather1-flow.py:fetch_weather
+    entrypoint: flows/02-weather1-flow.py:fetch_weather
     schedule:
       cron: "*/10 * * * *"
       timezone: "America/Bogota"
@@ -21,7 +21,7 @@ deployments:
       lon: -75.5658
 
   - name: scheduled-flow
-    entrypoint: flows/weather1-flow.py:fetch_weather
+    entrypoint: flows/02-weather1-flow.py:fetch_weather
     schedule:
       cron: "0 */2 * * *"
       timezone: "America/Bogota"

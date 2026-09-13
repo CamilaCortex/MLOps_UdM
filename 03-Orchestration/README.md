@@ -46,26 +46,106 @@ uv run prefect server start
 
 Y, para la parte de `Prefect-pipelines`, un Tracking Server de MLflow (ver el README del módulo de Tracking para el comando exacto).
 
+## Prefect Cloud vs. servidor local
+
+Prefect se puede correr de dos formas, y el código del pipeline no cambia
+nada entre una y otra: lo único que cambia es a qué API le habla el
+cliente de Prefect, y eso se controla con la variable de entorno
+`PREFECT_API_URL`.
+
+### Opción A: servidor local (la que usamos arriba, en "Comenzando")
+
+Es el servidor que levantas con `uv run prefect server start`. Toda la
+metadata (runs, deployments, logs) queda guardada en tu propia máquina,
+sin depender de ningún servicio externo — ideal para practicar en clase.
+El cliente necesita saber que le tiene que hablar a ese servidor local:
+
+```bash
+export PREFECT_API_URL="http://127.0.0.1:4200/api"
+```
+
+`prefect server start` normalmente deja esto ya configurado en la sesión
+donde lo corriste. Pero si vas a correr un flow desde **otra** terminal (o
+desde otra máquina/contenedor), tienes que exportar esta variable ahí
+también, apuntando al host donde esté corriendo el servidor. Ojo con el
+sufijo `/api` al final — sin él, los flows fallan en silencio al intentar
+reportar su estado.
+
+### Opción B: Prefect Cloud
+
+Prefect Cloud es el servicio administrado de Prefect: no corres ningún
+servidor tú misma, todo vive en la nube de Prefect. Para apuntar tu
+cliente ahí, cambias el valor de esa misma variable y agregas una
+adicional para autenticarte:
+
+```bash
+export PREFECT_API_URL="https://api.prefect.cloud/api/accounts/<ACCOUNT_ID>/workspaces/<WORKSPACE_ID>"
+export PREFECT_API_KEY="<tu-api-key>"
+```
+
+- `ACCOUNT_ID` y `WORKSPACE_ID` se sacan de la URL del dashboard de Prefect
+  Cloud cuando estás logueada ahí.
+- El API key se genera desde el dashboard (Settings -> API Keys).
+- A diferencia del servidor local, Prefect Cloud sí exige autenticación —
+  por eso `PREFECT_API_KEY` es obligatorio acá (el servidor local, al
+  correr en tu propia máquina, no lo pide).
+
+En vez de exportar las dos variables a mano, hay un atajo interactivo que
+hace lo mismo:
+
+```bash
+prefect cloud login
+```
+
+Te deja elegir entre autenticarte por navegador o pegar el API key
+directamente, y configura `PREFECT_API_URL`/`PREFECT_API_KEY` por ti en el
+perfil activo de Prefect.
+
+### ¿Cómo sé a cuál le estoy hablando ahora mismo?
+
+```bash
+prefect config view
+```
+
+Muestra el `PREFECT_API_URL` activo en este momento: si es
+`http://127.0.0.1:4200/api` (o similar), estás en el servidor local; si es
+`https://api.prefect.cloud/...`, estás en Cloud.
+
+Para no tener que reexportar variables cada vez que cambias de uno a otro,
+Prefect soporta **perfiles**:
+
+```bash
+prefect profile create local
+prefect profile use local
+prefect config set PREFECT_API_URL="http://127.0.0.1:4200/api"
+
+prefect profile create cloud
+prefect profile use cloud
+prefect cloud login
+```
+
+Y para volver a cualquiera de los dos: `prefect profile use <nombre>`.
+
 ## 00-intro-prefect: Conceptos Básicos
 
 Los archivos en `flows/` siguen una progresión pensada para leerse en orden:
 
-1. **weather1-bare.py**: un `@flow` simple, sin servir ni desplegar. Solo se ejecuta una vez al correr el script.
-2. **weather1-flow.py**: el mismo flow, ya con `log_prints=True` para que los `print()` aparezcan como logs en la UI de Prefect.
-3. **weather1-serve.py**: usa `.serve()` para mantener el flow corriendo y disponible para ejecuciones manuales o programadas.
-4. **weather1-serve-schedule.py** / **weather1-serve-params.py**: `.serve()` con cron schedule y con parámetros por defecto distintos.
-5. **weather1-deploy.py**: usa `.deploy()` (pensado para Prefect Cloud/trabajo distribuido) en vez de `.serve()`.
-6. **serve-two-flows.py** / **serve-two-flows-scheduled.py**: cómo servir varios flows distintos desde un mismo proceso, con `to_deployment()` y `serve()`.
+1. **01-weather1-bare.py**: un `@flow` simple, sin servir ni desplegar. Solo se ejecuta una vez al correr el script.
+2. **02-weather1-flow.py**: el mismo flow, ya con `log_prints=True` para que los `print()` aparezcan como logs en la UI de Prefect.
+3. **03-weather1-serve.py**: usa `.serve()` para mantener el flow corriendo y disponible para ejecuciones manuales o programadas.
+4. **04-weather1-serve-schedule.py** / **05-weather1-serve-params.py**: `.serve()` con cron schedule y con parámetros por defecto distintos.
+5. **06-weather1-deploy.py**: usa `.deploy()` (pensado para Prefect Cloud/trabajo distribuido) en vez de `.serve()`.
+6. **07-serve-two-flows.py** / **08-serve-two-flows-scheduled.py**: cómo servir varios flows distintos desde un mismo proceso, con `to_deployment()` y `serve()`.
 7. **prefect.yaml**: la alternativa declarativa (YAML) a `.deploy()` en código. Antes de usarlo, exporta `PREFECT_PROJECT_DIR` con la ruta absoluta de esta carpeta (ver comentario en el archivo) — así el archivo no depende de la ruta personal de nadie.
 
 En `workflows/` cada archivo ilustra un concepto puntual de Prefect:
 
-- **my-first-task.py**: `@task` + `@flow`, con `retries` y un artifact de tabla.
-- **create_secret.py** / **openai_with_secret.py**: cómo guardar y usar credenciales con `Secret` blocks (nunca hardcodeadas en el código).
-- **get_variable.py**: cómo leer una `Variable` configurada desde la UI de Prefect.
-- **retries.py**: mecanismo de reintentos automáticos ante fallos (simulado localmente, sin depender de un servicio externo).
-- **runtime_context.py**: cómo acceder a metadata de la ejecución actual (nombre del run, parámetros, deployment) con `prefect.runtime`.
-- **artifacts-ml.py** / **simple-artifacts.py**: cómo crear artifacts (markdown, tablas, links) para visualizar resultados de ML directamente en Prefect, sin herramientas externas. `simple-artifacts.py` es la versión resumida; `artifacts-ml.py` cubre más tipos de artifact.
+- **01-my-first-task.py**: `@task` + `@flow`, con `retries` y un artifact de tabla.
+- **02-retries.py**: mecanismo de reintentos automáticos ante fallos, a fondo (simulado localmente, sin depender de un servicio externo).
+- **03-create_secret.py** / **04-openai_with_secret.py**: cómo guardar y usar credenciales con `Secret` blocks (nunca hardcodeadas en el código).
+- **05-get_variable.py**: cómo leer una `Variable` configurada desde la UI de Prefect.
+- **06-runtime_context.py**: cómo acceder a metadata de la ejecución actual (nombre del run, parámetros, deployment) con `prefect.runtime`.
+- **07-simple-artifacts.py** / **08-artifacts-ml.py**: cómo crear artifacts (markdown, tablas, links) para visualizar resultados de ML directamente en Prefect, sin herramientas externas. `07-simple-artifacts.py` es la versión resumida; `08-artifacts-ml.py` cubre más tipos de artifact.
 
 ## Prefect-pipelines: Pipeline de ML Completo
 
@@ -113,7 +193,7 @@ de breakout de Zoom.
 
 ### Ejercicio 1: Retries y logging (15 min)
 
-Tomen `00-intro-prefect/flows/weather1-flow.py` y modifíquenlo para que la
+Tomen `00-intro-prefect/flows/02-weather1-flow.py` y modifíquenlo para que la
 `@task` (creen una, extrayendo la llamada a la API a una función `@task`
 separada) tenga `retries=3` y `retry_delay_seconds=[5, 10, 20]`. Corran el
 flow y observen en los logs qué pasa si fuerzan un error (por ejemplo,
@@ -122,7 +202,7 @@ recuperó, o falló definitivamente?
 
 ### Ejercicio 2: Secrets y Variables (15 min)
 
-Usando `create_secret.py` y `get_variable.py` como referencia, creen un
+Usando `03-create_secret.py` y `05-get_variable.py` como referencia, creen un
 nuevo Secret block con un valor inventado (por ejemplo, una "API key" de
 prueba) y una Variable con un umbral numérico. Escriban un pequeño flow que
 lea ambos valores y los reporte por log. Discutan: ¿por qué es mejor usar
@@ -130,7 +210,7 @@ Secrets/Variables que hardcodear estos valores en el código?
 
 ### Ejercicio 3: Artifacts a la medida (20 min)
 
-Tomando `simple-artifacts.py` como base, diseñen un nuevo artifact de tipo
+Tomando `07-simple-artifacts.py` como base, diseñen un nuevo artifact de tipo
 tabla que resuma resultados de una "predicción por lotes" inventada (por
 ejemplo: cantidad de registros procesados, tiempo total, cantidad de
 errores). Créenlo dentro de un nuevo flow y revísenlo en la UI de Prefect,
