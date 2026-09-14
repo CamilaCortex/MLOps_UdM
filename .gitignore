@@ -236,3 +236,4 @@ settings_local.py
 #models/
 03-Orchestrarion/mlruns/
 
+03-Orchestration/Prefect-pipelines/models/

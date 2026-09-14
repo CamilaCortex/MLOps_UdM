@@ -11,7 +11,7 @@ from prefect import task, get_run_logger
 from prefect.artifacts import create_table_artifact, create_link_artifact
 from prefect.tasks import task_input_hash
 
-from ..config import CATEGORICAL_FEATURES, MIN_DURATION, MAX_DURATION
+from ..config import MIN_DURATION, MAX_DURATION
 
 
 @task(
@@ -48,8 +48,15 @@ def read_dataframe(year: int, month: int) -> pd.DataFrame:
     # Filter by duration
     df = df[(df.duration >= MIN_DURATION) & (df.duration <= MAX_DURATION)]
     
-    # Convert categorical features
-    df[CATEGORICAL_FEATURES] = df[CATEGORICAL_FEATURES].astype(str)
+    # Convertimos a string las columnas crudas de ubicación (PULocationID,
+    # DOLocationID). No usamos CATEGORICAL_FEATURES aquí a propósito: esa
+    # constante ahora es ['PU_DO', 'trip_distance'] pensada para la etapa de
+    # create_features() (src/features/engineering.py), donde 'PU_DO' recién
+    # se arma combinando estas dos columnas. En este punto, justo después de
+    # leer el parquet crudo, 'PU_DO' todavía no existe -usarla acá causaba
+    # KeyError("['PU_DO'] not in index").
+    raw_location_columns = ['PULocationID', 'DOLocationID']
+    df[raw_location_columns] = df[raw_location_columns].astype(str)
     
     logger.info(f"Successfully loaded {len(df)} records")
     

@@ -3,7 +3,6 @@ Batch predictor usando modelo local copiado del pipeline.
 Versión simplificada que carga modelo desde archivos locales.
 """
 
-import pickle
 import pandas as pd
 import mlflow
 import xgboost as xgb
@@ -56,13 +55,13 @@ def load_local_model():
     
     model = mlflow.xgboost.load_model(str(model_path))
     
-    # Cargar preprocessor
-    preprocessor_file = model_dir / "preprocessor" / "preprocessor.b"
-    if not preprocessor_file.exists():
-        raise FileNotFoundError(f"Preprocessor no encontrado: {preprocessor_file}")
-    
-    with open(preprocessor_file, 'rb') as f:
-        preprocessor = pickle.load(f)
+    # Cargar preprocessor (loggeado como modelo sklearn con skops,
+    # no como pickle suelto -ver 02-Experiment-Tracking-)
+    preprocessor_dir = model_dir / "preprocessor"
+    if not preprocessor_dir.exists():
+        raise FileNotFoundError(f"Preprocessor no encontrado: {preprocessor_dir}")
+
+    preprocessor = mlflow.sklearn.load_model(str(preprocessor_dir))
     
     logging.info("Modelo y preprocessor cargados exitosamente")
     

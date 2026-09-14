@@ -15,7 +15,7 @@ def fetch_weather(lat: float = 38.9, lon: float = -77.0):
 
 
 if __name__ == "__main__":
-    fetch_weather.serve(name="deploy-scheduled", cron="* * * * *")
+    fetch_weather.serve(name="deploy-scheduled", cron="24 * * * *")
 
 
 # https://crontab.cronhub.io/

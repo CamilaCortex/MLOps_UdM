@@ -2,7 +2,6 @@
 Cargador del modelo y preprocessor.
 """
 
-import pickle
 import json
 import mlflow
 import xgboost as xgb
@@ -43,10 +42,10 @@ class ModelLoader:
         model_path = self.model_dir / "models_mlflow"
         self.model = mlflow.xgboost.load_model(str(model_path))
         
-        # Cargar preprocessor
-        preprocessor_file = self.model_dir / "preprocessor" / "preprocessor.b"
-        with open(preprocessor_file, 'rb') as f:
-            self.preprocessor = pickle.load(f)
+        # Cargar preprocessor (loggeado como modelo sklearn con skops,
+        # no como pickle suelto -ver 02-Experiment-Tracking-)
+        preprocessor_dir = self.model_dir / "preprocessor"
+        self.preprocessor = mlflow.sklearn.load_model(str(preprocessor_dir))
         
         logging.info("Modelo y preprocessor cargados exitosamente")
     

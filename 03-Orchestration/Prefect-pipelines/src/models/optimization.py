@@ -2,8 +2,6 @@
 Model optimization and training tasks.
 """
 
-import pickle
-from pathlib import Path
 from typing import Tuple, Dict
 
 import xgboost as xgb
@@ -187,11 +185,7 @@ def train_model(X_train, y_train, X_val, y_val, dv: DictVectorizer, best_params:
         Tuple of (MLflow run_id, RMSE)
     """
     logger = get_run_logger()
-    
-    # Ensure models directory exists
-    models_folder = Path('models')
-    models_folder.mkdir(exist_ok=True)
-    
+
     logger.info(f"Training with {X_train.shape[0]} samples, {X_train.shape[1]} features")
 
     with mlflow.start_run() as run:
@@ -217,22 +211,32 @@ def train_model(X_train, y_train, X_val, y_val, dv: DictVectorizer, best_params:
         # La comparacion contra el mejor modelo ya registrado (el "champion")
         # se hace en register_best_model, que si tiene acceso al Model Registry.
 
-        # Save preprocessor
-        preprocessor_path = "models/preprocessor.b"
-        with open(preprocessor_path, "wb") as f_out:
-            pickle.dump(dv, f_out)
-        
+        # El preprocessor (DictVectorizer) se loggea como modelo sklearn
+        # propio -no como artifact suelto con pickle- para que MLflow lo
+        # serialice con skops (ver el modulo de Tracking: un pickle
+        # manipulado ejecuta codigo arbitrario al cargarlo, sin importar
+        # que "solo" sea un DictVectorizer).
+        #
+        # Guardamos el model_id de cada pieza como tag del run porque, en
+        # MLflow 3.x, un modelo logueado con log_model(name=...) vive en su
+        # propia carpeta (mlruns/<exp>/models/<model_id>/) y no dentro de
+        # los artifacts del run: el uri confiable para volver a encontrarlo
+        # despues es models:/<model_id>, no runs:/{run_id}/<name>.
         try:
-            mlflow.log_artifact(preprocessor_path, artifact_path="preprocessor")
-            mlflow.xgboost.log_model(booster, name="models_mlflow")
+            preprocessor_info = mlflow.sklearn.log_model(dv, name="preprocessor")
+            model_info = mlflow.xgboost.log_model(booster, name="models_mlflow")
+            mlflow.set_tags({
+                "preprocessor_model_id": preprocessor_info.model_id,
+                "xgboost_model_id": model_info.model_id,
+            })
             logger.info("Successfully logged model and preprocessor to MLflow")
         except Exception as e:
             # No tragamos este error: si el modelo no queda loggeado aquí,
             # register_best_model (el siguiente paso del pipeline) igual va
-            # a fallar al buscarlo en runs:/{run_id}/models_mlflow, pero con
-            # un error mucho más confuso y lejos de la causa real. Preferimos
-            # fallar en este punto, con contexto claro sobre qué run falló, y
-            # dejar que Prefect reintente la task (ya tiene retries=2).
+            # a fallar al buscarlo por su tag de model_id, pero con un error
+            # mucho más confuso y lejos de la causa real. Preferimos fallar
+            # en este punto, con contexto claro sobre qué run falló, y dejar
+            # que Prefect reintente la task (ya tiene retries=2).
             logger.error(
                 f"Failed to log model/preprocessor to MLflow for run "
                 f"{run.info.run_id}: {e}"
@@ -270,9 +274,8 @@ def train_model(X_train, y_train, X_val, y_val, dv: DictVectorizer, best_params:
         - **Num Boost Rounds**: 30
 
         ## Artifacts
-        - Model saved to MLflow
-        - Preprocessor saved to MLflow
-        - Local backup in `models/` directory
+        - Model saved to MLflow (flavor: xgboost)
+        - Preprocessor saved to MLflow (flavor: sklearn, formato skops)
         """
 
         create_markdown_artifact(

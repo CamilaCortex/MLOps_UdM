@@ -48,7 +48,21 @@ def register_best_model(
     client = MlflowClient()
 
     try:
-        model_uri = f"runs:/{run_id}/models_mlflow"
+        run = client.get_run(run_id)
+        xgboost_model_id = run.data.tags.get("xgboost_model_id")
+        preprocessor_model_id = run.data.tags.get("preprocessor_model_id")
+        if not xgboost_model_id or not preprocessor_model_id:
+            raise ValueError(
+                f"Run {run_id} no tiene los tags 'xgboost_model_id' / "
+                "'preprocessor_model_id'. ¿Se entrenó con la versión actual "
+                "de train_model (src/models/optimization.py)?"
+            )
+
+        # models:/<model_id> es la forma confiable de referenciar un modelo
+        # logueado con log_model(name=...) en MLflow 3.x: vive en su propia
+        # carpeta (mlruns/<exp>/models/<model_id>/), no dentro de los
+        # artifacts del run, así que runs:/{run_id}/<name> no es fiable aquí.
+        model_uri = f"models:/{xgboost_model_id}"
 
         logger.info(f"Registering model from run: {run_id}")
         logger.info(f"Model URI: {model_uri}")
@@ -96,7 +110,9 @@ def register_best_model(
             )
 
         # Save model locally
-        local_model_path = _save_model_locally(run_id, model_name, version, rmse, logger)
+        local_model_path = _save_model_locally(
+            run_id, xgboost_model_id, preprocessor_model_id, model_name, version, rmse, logger
+        )
 
         # Create Prefect artifact with registration details
         registration_summary = _build_registration_summary(
@@ -216,12 +232,22 @@ def _build_registration_summary(
     """
 
 
-def _save_model_locally(run_id: str, model_name: str, version: str, rmse: float, logger) -> str:
+def _save_model_locally(
+    run_id: str,
+    xgboost_model_id: str,
+    preprocessor_model_id: str,
+    model_name: str,
+    version: str,
+    rmse: float,
+    logger,
+) -> str:
     """
     Save model locally for backup and offline use.
 
     Args:
-        run_id: MLflow run ID
+        run_id: MLflow run ID (guardado en la metadata, para trazabilidad)
+        xgboost_model_id: Logged Model id del XGBoost Booster entrenado
+        preprocessor_model_id: Logged Model id del DictVectorizer ajustado
         model_name: Name of the model
         version: Model version
         rmse: RMSE metric
@@ -240,22 +266,29 @@ def _save_model_locally(run_id: str, model_name: str, version: str, rmse: float,
 
         logger.info(f"Saving model locally to: {model_dir}")
 
-        model_uri = f"runs:/{run_id}/models_mlflow"
+        # Cada modelo se descarga a su propia subcarpeta fija
+        # (models_mlflow/, preprocessor/) para que batch-deploy y
+        # web-service sigan encontrandolos donde ya los esperan.
+        xgboost_dst = model_dir / "models_mlflow"
+        xgboost_dst.mkdir(exist_ok=True)
         local_model_path = mlflow.artifacts.download_artifacts(
-            artifact_uri=model_uri,
-            dst_path=str(model_dir)
+            artifact_uri=f"models:/{xgboost_model_id}",
+            dst_path=str(xgboost_dst)
         )
 
-        preprocessor_uri = f"runs:/{run_id}/preprocessor"
+        preprocessor_dst = model_dir / "preprocessor"
+        preprocessor_dst.mkdir(exist_ok=True)
         preprocessor_path = mlflow.artifacts.download_artifacts(
-            artifact_uri=preprocessor_uri,
-            dst_path=str(model_dir)
+            artifact_uri=f"models:/{preprocessor_model_id}",
+            dst_path=str(preprocessor_dst)
         )
 
         metadata = {
             "model_name": model_name,
             "version": version,
             "run_id": run_id,
+            "xgboost_model_id": xgboost_model_id,
+            "preprocessor_model_id": preprocessor_model_id,
             "rmse": rmse,
             "timestamp": timestamp,
             "model_path": str(local_model_path),

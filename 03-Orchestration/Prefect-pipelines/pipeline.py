@@ -9,8 +9,8 @@ import mlflow
 from prefect import flow, get_run_logger
 from prefect.artifacts import create_markdown_artifact
 
-from src.config import setup_mlflow, DEFAULT_YEAR, DEFAULT_MONTH, TARGET_COLUMN, MLFLOW_EXPERIMENT_NAME, MLFLOW_UI_URL
-from src.data import read_dataframe, validate_data, calculate_next_period
+from src.config import setup_mlflow, TARGET_COLUMN, MLFLOW_EXPERIMENT_NAME, MLFLOW_UI_URL
+from src.data import read_dataframe, validate_data, calculate_next_period, find_latest_available_period
 from src.features import create_features
 from src.models import optimize_hyperparameters, train_model, register_best_model
 
@@ -39,14 +39,18 @@ def duration_prediction_flow(year: int = None, month: int = None) -> str:
         MLflow run ID
     """
     logger = get_run_logger()
-    
-    # Use defaults if not provided
-    if year is None:
-        year = DEFAULT_YEAR
-    
-    if month is None:
-        month = DEFAULT_MONTH
-    
+
+    # Si no se especifica year/month, se detecta automáticamente el periodo
+    # más reciente que la TLC ya tenga publicado (en vez de usar siempre
+    # DEFAULT_YEAR/DEFAULT_MONTH, que quedarían fijos en el tiempo). Esto es
+    # lo que permite que un deployment programado (ver deploy.py) reentrene
+    # cada mes con datos realmente nuevos, sin tener que re-desplegar el
+    # flow cada vez que cambia el mes.
+    if year is None or month is None:
+        logger.info("year/month no especificados: detectando el periodo más reciente disponible en TLC...")
+        year, month = find_latest_available_period()
+        logger.info(f"Periodo detectado: entrenamiento {year}-{month:02d}")
+
     # Load training data
     df_train = read_dataframe(year=year, month=month)
     
@@ -129,8 +133,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description='Train a model to predict taxi trip duration using Prefect.')
-    parser.add_argument('--year', type=int, default=DEFAULT_YEAR, help=f'Year of the data to train on (default: {DEFAULT_YEAR})')
-    parser.add_argument('--month', type=int, default=DEFAULT_MONTH, help=f'Month of the data to train on (default: {DEFAULT_MONTH})')
+    parser.add_argument('--year', type=int, default=None, help='Year of the data to train on (default: se detecta automáticamente el periodo más reciente disponible)')
+    parser.add_argument('--month', type=int, default=None, help='Month of the data to train on (default: se detecta automáticamente el periodo más reciente disponible)')
     args = parser.parse_args()
 
     try:
@@ -148,3 +152,6 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
         raise
+
+
+ # uv run mlflow ui --backend-store-uri sqlite:///mlflow.db                                                 

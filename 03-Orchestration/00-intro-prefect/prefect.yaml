@@ -31,3 +31,7 @@ deployments:
 
 # prefect deploy --all
 # prefect deployment ls
+# prefect deployment inspect "fetch-weather/simple-flow-deployment"
+# prefect deployment inspect "fetch-weather/scheduled-flow"
+# prefect deployment delete --id c9d5e0a4-95ac-4230-b6c9-c022fab92b3d
+# prefect deployment delete --id 92d66449-9728-4b2a-a60b-2581278ec61f
