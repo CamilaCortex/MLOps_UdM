@@ -186,48 +186,37 @@ schedule cada 2 minutos) nunca reemplaza un buen modelo en producción por
 uno peor. Los detalles completos están en
 [`Prefect-pipelines/README_MODEL_REGISTRY.md`](Prefect-pipelines/README_MODEL_REGISTRY.md).
 
-## Ejercicios de Equipo
+## Ejercicio de Equipo
 
-Pensados para resolverse en equipos de 2-3 personas, por ejemplo en salas
-de breakout de Zoom.
+Pensado para resolverse en equipos de 2-3 personas, en una sala de breakout de
+Zoom, usando solo lo visto en `00-intro-prefect` (sin depender de
+`Prefect-pipelines`).
 
-### Ejercicio 1: Retries y logging (15 min)
+### Monitoreo de un job por lotes (30 min)
 
-Tomen `00-intro-prefect/flows/02-weather1-flow.py` y modifíquenlo para que la
-`@task` (creen una, extrayendo la llamada a la API a una función `@task`
-separada) tenga `retries=3` y `retry_delay_seconds=[5, 10, 20]`. Corran el
-flow y observen en los logs qué pasa si fuerzan un error (por ejemplo,
-usando una URL inválida). Compartan en la plenaria: ¿en qué intento se
-recuperó, o falló definitivamente?
+Van a construir, en equipo, un único flow que simule el monitoreo de un job de
+predicción por lotes, combinando varios conceptos vistos en clase:
 
-### Ejercicio 2: Secrets y Variables (15 min)
+1. **Retries:** partiendo de `02-weather1-flow.py` y `02-retries.py` como
+   referencia, escriban una `@task` llamada `procesar_lote` que simule una falla
+   transitoria (por ejemplo, con `random.random()` fallando ~30% de las veces) y
+   configúrenla con `retries=3` y `retry_delay_seconds=[5, 10, 20]`. Corran el
+   flow varias veces y observen en los logs en qué intento se recupera o si
+   falla definitivamente.
+2. **Secrets y Variables:** usando `03-create_secret.py` y `05-get_variable.py`
+   como referencia, creen un Secret block con una "API key" inventada y una
+   Variable con un umbral numérico (por ejemplo, `max_error_rate`). El flow
+   debe leer ambos y usar el umbral para decidir si el lote se marca como
+   "aceptable" o "requiere revisión".
+3. **Artifacts:** tomando `07-simple-artifacts.py` como base, creen un artifact
+   de tipo tabla dentro del mismo flow que resuma el resultado (cantidad de
+   registros procesados, tiempo total, cantidad de errores, y si quedó
+   "aceptable" o "requiere revisión"). Revísenlo en la UI de Prefect, en la
+   pestaña Artifacts del run.
 
-Usando `03-create_secret.py` y `05-get_variable.py` como referencia, creen un
-nuevo Secret block con un valor inventado (por ejemplo, una "API key" de
-prueba) y una Variable con un umbral numérico. Escriban un pequeño flow que
-lea ambos valores y los reporte por log. Discutan: ¿por qué es mejor usar
-Secrets/Variables que hardcodear estos valores en el código?
+Al final, discutan en equipo: ¿por qué conviene usar Secrets/Variables/
+Artifacts en vez de hardcodear valores en el código o solo imprimir
+resultados con `print()`?
 
-### Ejercicio 3: Artifacts a la medida (20 min)
-
-Tomando `07-simple-artifacts.py` como base, diseñen un nuevo artifact de tipo
-tabla que resuma resultados de una "predicción por lotes" inventada (por
-ejemplo: cantidad de registros procesados, tiempo total, cantidad de
-errores). Créenlo dentro de un nuevo flow y revísenlo en la UI de Prefect,
-en la pestaña Artifacts del run.
-
-### Ejercicio 4: Trazar la lógica de champion/candidate (20 min)
-
-Sin ejecutar código (o ejecutándolo si tienen MLflow disponible), lean
-`Prefect-pipelines/src/models/model_registry.py` y respondan en equipo:
-
-1. Si el pipeline corre por primera vez con RMSE = 7.2, ¿qué alias(es)
-   recibe esa versión?
-2. Si corre una segunda vez con RMSE = 7.5, ¿cambia el champion? ¿Qué
-   alias(es) tiene la nueva versión?
-3. Si corre una tercera vez con RMSE = 6.9, ¿qué cambia?
-4. ¿Qué línea de código específica es la que decide si una versión se
-   convierte en champion?
-
-Compartan sus respuestas y verifíquenlas leyendo la función
-`_get_champion_rmse` y la condición `promoted_to_champion`.
+**Entregable para la plenaria:** una captura de pantalla o descripción del
+artifact que generaron, y su respuesta a la pregunta de discusión.
