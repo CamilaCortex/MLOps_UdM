@@ -169,6 +169,37 @@ def save_predictions_to_db(df, predictions, metadata, batch_id=None):
     return num_saved
 
 
+def save_predictions_to_file(df, predictions, metadata, batch_id):
+    """
+    Guarda las predicciones de este batch como archivo parquet en data/output,
+    combinando las features de entrada con la prediccion y metadata del modelo.
+
+    Args:
+        df: DataFrame con input features
+        predictions: Array de predicciones
+        metadata: Dictionary con metadata del modelo
+        batch_id: Identificador del batch (mismo que se usa en la DB)
+
+    Returns:
+        Path al archivo parquet guardado
+    """
+    logging.info("Guardando predicciones en archivo (data/output)...")
+
+    output_df = df.copy()
+    output_df["predicted_duration_minutes"] = predictions
+    output_df["model_name"] = metadata["model_name"]
+    output_df["model_version"] = str(metadata["version"])
+    output_df["batch_id"] = batch_id
+    output_df["prediction_timestamp"] = datetime.now()
+
+    filename = f"predictions_{batch_id}.parquet"
+    filepath = settings.DATA_OUTPUT_DIR / filename
+    output_df.to_parquet(filepath)
+
+    logging.info(f"Predicciones guardadas en: {filepath}")
+    return filepath
+
+
 def process_batch_file(input_file):
     """
     Procesa un archivo batch completo.
@@ -204,7 +235,11 @@ def process_batch_file(input_file):
     logging.info("Paso 5: Guardando en base de datos SQL")
     batch_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     num_saved = save_predictions_to_db(df, predictions, metadata, batch_id)
-    
+
+    # 6. Guardar tambien como archivo en data/output
+    logging.info("Paso 6: Guardando predicciones en archivo")
+    output_file = save_predictions_to_file(df, predictions, metadata, batch_id)
+
     # Resumen
     logging.info("="*60)
     logging.info("Procesamiento batch completado exitosamente")
@@ -219,6 +254,7 @@ def process_batch_file(input_file):
     return {
         'status': 'success',
         'input_file': str(input_file),
+        'output_file': str(output_file),
         'trips_processed': len(df),
         'records_saved': num_saved,
         'batch_id': batch_id,

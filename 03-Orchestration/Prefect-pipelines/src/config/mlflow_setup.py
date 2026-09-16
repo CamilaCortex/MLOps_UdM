@@ -37,3 +37,6 @@ def setup_mlflow():
     except Exception as e:
         logger.error(f"Failed to set MLflow experiment: {e}")
         raise
+
+#from prefect.blocks.system import Secret
+#Secret(value="http://127.0.0.1:5000").save("mlflow-tracking-uri", overwrite=True)

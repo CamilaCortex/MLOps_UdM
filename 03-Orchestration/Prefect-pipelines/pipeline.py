@@ -27,7 +27,7 @@ setup_mlflow()
     description="End-to-end ML pipeline for taxi duration prediction with Optuna optimization",
     log_prints=True
 )
-def duration_prediction_flow(year: int = None, month: int = None) -> str:
+def duration_prediction_flow(year: int | None = None, month: int | None = None) -> str:
     """
     Main pipeline flow for NYC taxi duration prediction.
 
@@ -154,4 +154,10 @@ if __name__ == "__main__":
         raise
 
 
- # uv run mlflow ui --backend-store-uri sqlite:///mlflow.db                                                 
+ # uv run mlflow ui --backend-store-uri sqlite:///mlflow.db      
+ # uv run mlflow server \
+#   --host 127.0.0.1 \
+#   --port 5000 \
+#   --backend-store-uri sqlite:///mlflow.db \
+#   --default-artifact-root ./mlruns \
+#   --allowed-hosts "localhost,127.0.0.1,127.0.0.1:5000"                                        

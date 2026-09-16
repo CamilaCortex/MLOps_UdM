@@ -17,7 +17,7 @@ from src.database import get_database
 
 
 @task(name="generate-taxi-data", description="Generar datos de viajes de taxi")
-def generate_data_task(num_trips: int = None):
+def generate_data_task(num_trips: int | None = None):
     """
     Genera datos de viajes de taxi.
 
@@ -108,6 +108,7 @@ def create_summary_artifact(result: dict):
     
     ## Datos
     - **Archivo de Entrada**: {result["input_file"]}
+    - **Archivo de Salida**: {result["output_file"]}
     - **Viajes Procesados**: {result["trips_processed"]:,}
     - **Registros Guardados**: {result["records_saved"]:,}
     
@@ -168,7 +169,7 @@ def get_db_stats_task():
     name="batch-prediction",
     description="Flow completo de predicción batch con modelo local",
 )
-def batch_prediction_flow(num_trips: int = None):
+def batch_prediction_flow(num_trips: int | None = None):
     """
     Flow completo de predicción batch.
 
@@ -232,7 +233,7 @@ def scheduled_batch_flow():
     logger = get_run_logger()
     logger.info("Ejecutando flow programado de predicción batch")
 
-    result = batch_prediction_flow(num_trips=None)
+    result = batch_prediction_flow(num_trips=1000)
 
     return result
 
