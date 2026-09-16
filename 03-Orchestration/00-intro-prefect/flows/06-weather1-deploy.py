@@ -1,4 +1,5 @@
 import httpx
+from pathlib import Path
 from prefect import flow
 
 
@@ -15,12 +16,10 @@ def fetch_weather(lat: float = 38.9, lon: float = -77.0):
 
 
 if __name__ == "__main__":
-    fetch_weather.from_source(
-        source="https://github.com/CamilaCortex/MLOps_UdM",
-        entrypoint="03-Orchestration/00-intro-prefect/flows/06-weather1-deploy.py:fetch_weather",
-    ).deploy(
+    # .serve() no necesita work pool, imagen ni repo remoto: el propio
+    # script queda corriendo como el "worker" y reporta a Prefect Cloud.
+    fetch_weather.serve(
         name="weather-deployment",
         cron="*/10 * * * *",
         parameters={"lat": 6.2476, "lon": -75.5658},
-        work_pool_name="default-worker-pool",  # sin espacio al final
     )
