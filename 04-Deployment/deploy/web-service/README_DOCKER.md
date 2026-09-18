@@ -19,7 +19,7 @@ Deployment con Docker para la API de predicción de duración de viajes.
 Antes de construir la imagen, asegúrate de tener el modelo:
 
 ```bash
-cd /Users/mdurango/Downloads/proyectos/MLOps_UdM/04-Deployment/deploy/web-service
+cd MLOps_UdM/04-Deployment/deploy/web-service
 
 uv run python copy_model.py
 ```
