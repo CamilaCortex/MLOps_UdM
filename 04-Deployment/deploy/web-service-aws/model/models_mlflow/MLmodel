@@ -1,4 +1,4 @@
-artifact_path: /Users/mdurango/Downloads/proyectos/MLOps_UdM/03-Orchestration/Prefect-pipelines/mlruns/1/models/m-c2e47bf5cb464d3cb0407f0c9e362857/artifacts
+artifact_path: /Users/mdurango/Downloads/proyectos/MLOps_UdM/03-Orchestration/Prefect-pipelines/mlruns/1/models/m-0c8d0a6af4074a91a31371cf6f4b2b6a/artifacts
 flavors:
   python_function:
     data: model.ubj
@@ -13,10 +13,10 @@ flavors:
     model_class: xgboost.core.Booster
     model_format: ubj
     xgb_version: 3.2.0
-mlflow_version: 3.10.1
-model_id: m-c2e47bf5cb464d3cb0407f0c9e362857
-model_size_bytes: 96810
-model_uuid: m-c2e47bf5cb464d3cb0407f0c9e362857
+mlflow_version: 3.16.0
+model_id: m-0c8d0a6af4074a91a31371cf6f4b2b6a
+model_size_bytes: 135371
+model_uuid: m-0c8d0a6af4074a91a31371cf6f4b2b6a
 prompts: null
-run_id: 8b55c7b2b9a4403582cf0e0f1bb407e4
-utc_time_created: '2026-04-07 20:28:28.704307'
+run_id: 1b35d8cab03a4412a2a54ca18b5ef4a8
+utc_time_created: '2026-09-17 00:32:09.039412'
