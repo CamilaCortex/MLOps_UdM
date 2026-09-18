@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
 
  # uv run mlflow ui --backend-store-uri sqlite:///mlflow.db      
- # uv run mlflow server \
+#  uv run mlflow server \
 #   --host 127.0.0.1 \
 #   --port 5000 \
 #   --backend-store-uri sqlite:///mlflow.db \

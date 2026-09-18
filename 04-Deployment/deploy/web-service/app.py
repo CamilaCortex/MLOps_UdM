@@ -2,11 +2,13 @@
 API REST con FastAPI para predicción de duración de viajes de taxi.
 """
 
+from contextlib import asynccontextmanager
+import logging
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-import logging
 
 from src.schemas import (
     TripRequest,
@@ -19,29 +21,14 @@ from src.model_loader import model_loader
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-# Crear app
-app = FastAPI(
-    title="NYC Taxi Duration Prediction API",
-    description="API para predecir la duración de viajes de taxi en NYC",
-    version="1.0.0"
-)
 
-# Templates
-templates = Jinja2Templates(directory="templates")
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Carga el modelo al iniciar la aplicación"""
+# 1. Cargar el modelo al iniciar la aplicación, para que esté disponible en memoria para todos los requests.
+# Esto evita cargarlo en cada request, lo cual sería muy ineficiente.
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+   Carga el modelo al iniciar la aplicación y maneja errores de carga.
+    """
     logging.info("Iniciando API...")
     try:
         model_loader.load()
@@ -49,8 +36,46 @@ async def startup_event():
     except Exception as e:
         logging.error("Error al cargar modelo: %s", e)
         raise
+    yield
 
 
+#2. Crear app con FastAPI, incluyendo CORS y templates. El lifespan se encarga de cargar el modelo al iniciar la app.
+app = FastAPI(
+    title="NYC Taxi Duration Prediction API",
+    description="API para predecir la duración de viajes de taxi en NYC",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+#3. Cargamos Templates para crear un frontend simple en / (index.html) que permita hacer predicciones desde un navegador.
+templates = Jinja2Templates(directory="templates")
+
+# 4. Configuramos CORS para permitir requests desde cualquier origen (útil para desarrollo y pruebas, pero en producción se recomienda restringirlo).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 5. Definimos un helper para convertir un TripRequest en el dict de features que espera el preprocessor.
+def _trip_to_feature(trip: TripRequest) -> dict:
+    """
+    Convierte un TripRequest en el dict de features que espera el
+    preprocessor (mismo formato usado en entrenamiento: PU_DO combinado +
+    trip_distance). Se usa tanto en /predict como en /predict/batch para
+    no repetir esta construcción en los dos endpoints.
+    """
+    return {
+        'PU_DO': f"{trip.PULocationID}_{trip.DOLocationID}",
+        'trip_distance': trip.trip_distance,
+    }
+
+# 6. Definimos los endpoints de la API: / (interfaz web)
+# /health (health check),
+# /predict (predicción individual) 
+# /predict/batch (predicción batch).
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Interfaz web para hacer predicciones"""
@@ -65,13 +90,13 @@ async def health_check():
     """
     try:
         is_loaded = model_loader.is_loaded()
-        
+
         if not is_loaded:
             raise HTTPException(
                 status_code=503,
                 detail="Modelo no cargado"
             )
-        
+
         return HealthResponse(
             status="healthy",
             model_loaded=True,
@@ -79,7 +104,7 @@ async def health_check():
             model_version=str(model_loader.metadata['version']),
             model_rmse=model_loader.metadata['rmse']
         )
-    
+
     except Exception as e:
         logging.error("Error en health check: %s", e)
         raise HTTPException(
@@ -92,23 +117,16 @@ async def health_check():
 async def predict(trip: TripRequest):
     """
     Predice la duración de un viaje de taxi.
-    
+
     Args:
         trip: Datos del viaje (PULocationID, DOLocationID, trip_distance)
-        
+
     Returns:
         Predicción de duración en minutos
     """
     try:
-        # Preparar features (PU_DO combinado)
-        feature = {
-            'PU_DO': f"{trip.PULocationID}_{trip.DOLocationID}",
-            'trip_distance': trip.trip_distance
-        }
-        
-        # Predecir
-        predictions = model_loader.predict([feature])
-        
+        predictions = model_loader.predict([_trip_to_feature(trip)])
+
         return PredictionResponse(
             PULocationID=trip.PULocationID,
             DOLocationID=trip.DOLocationID,
@@ -117,7 +135,7 @@ async def predict(trip: TripRequest):
             model_name=model_loader.metadata['model_name'],
             model_version=str(model_loader.metadata['version'])
         )
-    
+
     except Exception as e:
         logging.error("Error en predicción: %s", e)
         raise HTTPException(
@@ -130,27 +148,17 @@ async def predict(trip: TripRequest):
 async def predict_batch(batch: BatchTripRequest):
     """
     Predice la duración de múltiples viajes de taxi.
-    
+
     Args:
         batch: Lista de viajes
-        
+
     Returns:
         Lista de predicciones
     """
     try:
-        # Preparar features (PU_DO combinado)
-        features = [
-            {
-                'PU_DO': f"{trip.PULocationID}_{trip.DOLocationID}",
-                'trip_distance': trip.trip_distance
-            }
-            for trip in batch.trips
-        ]
-        
-        # Predecir
+        features = [_trip_to_feature(trip) for trip in batch.trips]
         predictions = model_loader.predict(features)
-        
-        # Crear respuestas
+
         prediction_responses = [
             PredictionResponse(
                 PULocationID=trip.PULocationID,
@@ -162,14 +170,14 @@ async def predict_batch(batch: BatchTripRequest):
             )
             for trip, pred in zip(batch.trips, predictions)
         ]
-        
+
         return BatchPredictionResponse(
             predictions=prediction_responses,
             total=len(prediction_responses),
             model_name=model_loader.metadata['model_name'],
             model_version=str(model_loader.metadata['version'])
         )
-    
+
     except Exception as e:
         logging.error("Error en predicción batch: %s", e)
         raise HTTPException(
@@ -184,7 +192,7 @@ if __name__ == "__main__":
 
 
 # lsof -ti:8000 | xargs kill -9
-# uv run uvicorn app:app --reload --host 0.0.0.0 --port 8000  
+# uv run uvicorn app:app --reload --host 0.0.0.0 --port 8000
 
 
 # curl -X POST http://localhost:8000/predict/batch \
@@ -212,4 +220,3 @@ if __name__ == "__main__":
 # curl -X POST http://localhost:8000/predict \
 #   -H "Content-Type: application/json" \
 #   -d '{"PULocationID": 161, "DOLocationID": 236, "trip_distance": 1.5}'
-

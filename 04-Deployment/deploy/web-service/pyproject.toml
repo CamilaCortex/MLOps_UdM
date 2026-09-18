@@ -1,16 +1,24 @@
 [project]
 name = "taxi-prediction-service"
 version = "0.1.0"
-description = "NYC Taxi Trip Duration Prediction Web Service"
+description = "NYC Taxi Trip Duration Prediction Web Service (FastAPI)"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 dependencies = [
-    "flask>=2.3.0",
-    "gunicorn>=23.0.0",
-    "numpy>=1.21.0",
-    "pandas>=1.3.0",
-    "requests>=2.28.0",
-    "scikit-learn>=1.1.0",
+    # Servidor web: la API en sí (app.py) y su interfaz HTML (Jinja2Templates)
+    "fastapi>=0.135.3",
+    "uvicorn[standard]>=0.42.0",
+    "pydantic>=2.9.0",
+    "jinja2>=3.1.6",
+    # Carga del modelo: deben ser compatibles con lo que MLflow declaró al
+    # loguear el modelo (ver model/models_mlflow/requirements.txt y
+    # model/preprocessor/requirements.txt). scikit-learn y skops se dejan
+    # con versión exacta porque el preprocessor se serializó con skops y
+    # una versión distinta puede fallar o deserializar mal el objeto.
+    "mlflow>=3.15.2",
+    "xgboost>=3.0.4",
+    "scikit-learn==1.6.1",
+    "skops==0.13.0",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +27,9 @@ dev = [
     "black>=22.0.0",
     "flake8>=5.0.0",
 ]
-production = [
-    "gunicorn>=20.1.0",
-]
+
+[tool.uv]
+# Este directorio es una app, no una librería para distribuir: le decimos a
+# uv que no intente construirla/instalarla como paquete, solo que resuelva
+# e instale sus dependencias.
+package = false

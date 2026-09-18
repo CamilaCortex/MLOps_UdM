@@ -1,11 +1,28 @@
 [project]
-name = "web-service-docker-aws"
+name = "taxi-prediction-service-aws"
 version = "0.1.0"
-description = "Add your description here"
+description = "NYC Taxi Trip Duration Prediction Web Service (Flask), pensado para desplegarse en AWS EC2"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    # Servidor web: la API en si (predict.py), servida por gunicorn dentro
+    # del contenedor
     "flask>=3.1.1",
     "gunicorn>=23.0.0",
+    # Carga del modelo: deben ser compatibles con lo que MLflow declaró al
+    # loguear el modelo (ver model/models_mlflow/requirements.txt y
+    # model/preprocessor/requirements.txt luego de correr copy_model.py).
+    # scikit-learn y skops se dejan con versión exacta porque el
+    # preprocessor se serializó con skops y una versión distinta puede
+    # fallar o deserializar mal el objeto.
+    "mlflow>=3.15.2",
+    "xgboost>=3.0.4",
     "scikit-learn==1.6.1",
+    "skops==0.13.0",
 ]
+
+[tool.uv]
+# Este directorio es una app, no una libreria para distribuir: le decimos a
+# uv que no intente construirla/instalarla como paquete, solo que resuelva
+# e instale sus dependencias.
+package = false

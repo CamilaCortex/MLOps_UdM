@@ -26,11 +26,19 @@ def _resolve_champion_version(project_root: Path):
     pipeline de entrenamiento) - en ese caso el llamador debe usar un
     fallback.
     """
+    # Import de mlflow separado en su propio try: si mlflow no esta
+    # instalado, MlflowException no llega a existir, y el except de abajo
+    # -que la referencia- reventaria con UnboundLocalError en vez de caer
+    # al fallback. Por eso salimos aqui mismo si el import falla.
     try:
         import mlflow
         from mlflow.tracking import MlflowClient
         from mlflow.exceptions import MlflowException
+    except ImportError as e:
+        logging.warning(f"mlflow no esta instalado, no se puede resolver el champion: {e}")
+        return None
 
+    try:
         try:
             from prefect.blocks.system import Secret
             mlflow_uri = Secret.load("mlflow-tracking-uri").get()

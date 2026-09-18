@@ -1,13 +1,49 @@
-# Guía para Desplegar Docker en AWS EC2 (Para Principiantes)
+# Guía para Desplegar en AWS EC2 (Para Principiantes)
 
 Esta guía te ayudará a desplegar tu servicio de predicción de taxis en un servidor AWS EC2 y configurarlo para recibir solicitudes desde Postman.
 
-## 1. Conectarse a tu Instancia EC2
+**Importante sobre el modelo**: el modelo (XGBoost `.ubj`) y el preprocessor (`skops`) están excluidos de git a propósito (pesan y cambian con cada entrenamiento), así que la instancia EC2 no los puede obtener con un simple `git clone`. Por eso el flujo de esta guía es: construyes la imagen Docker **en tu computador** (con el modelo ya adentro), la subes a Docker Hub, y en EC2 solo la descargas y la corres.
+
+## 0. Construir la Imagen con el Modelo (en tu computador)
+
+Antes de tocar EC2, desde tu computador:
+
+```bash
+cd 04-Deployment/deploy/web-service-aws
+
+# Copia el modelo "champion" actual desde MLflow
+uv run python copy_model.py
+
+# Construye la imagen con el modelo ya incluido
+docker build -t taxi-prediction-aws .
+
+# Pruébala en local antes de subirla
+docker run -d -p 9696:9696 --name taxi-prediction-aws taxi-prediction-aws
+curl http://localhost:9696/health
+docker stop taxi-prediction-aws && docker rm taxi-prediction-aws
+```
+
+## 1. Subir la Imagen a Docker Hub
+
+```bash
+# Inicia sesión (una sola vez)
+docker login
+
+# Etiqueta la imagen con tu usuario de Docker Hub
+docker tag taxi-prediction-aws tu-usuario/taxi-prediction-aws:v1
+
+# Sube la imagen
+docker push tu-usuario/taxi-prediction-aws:v1
+```
+
+> Reemplaza `tu-usuario` por tu usuario real de Docker Hub. El repositorio puede ser público o privado (si es privado, en el Paso 4 necesitarás hacer `docker login` también en la instancia EC2).
+
+## 2. Conectarte a tu Instancia EC2
 
 ### Requisitos previos
 
 - Una instancia EC2 ya creada en AWS
-- El archivo .pem de tu clave privada
+- El archivo `.pem` de tu clave privada
 - El DNS público de tu instancia (algo como `ec2-12-34-56-78.compute-1.amazonaws.com`)
 
 ### Pasos para conectarte
@@ -24,10 +60,9 @@ Esta guía te ayudará a desplegar tu servicio de predicción de taxis en un ser
    ssh -i tu-clave.pem ec2-user@ec2-12-34-56-78.compute-1.amazonaws.com
    ```
 
-   > 💡 Reemplaza `tu-clave.pem` con el nombre de tu archivo de clave y la dirección con el DNS público de tu instancia.
-   >
+   Reemplaza `tu-clave.pem` con el nombre de tu archivo de clave y la dirección con el DNS público de tu instancia.
 
-## 2. Instalar Docker en EC2
+## 3. Instalar Docker en EC2
 
 Una vez conectado a tu instancia EC2, instala Docker:
 
@@ -37,9 +72,6 @@ sudo yum update -y
 
 # Instalar Docker
 sudo yum install -y docker
-
-# Install git
-sudo yum install -y git
 
 # Iniciar el servicio Docker
 sudo service docker start
@@ -51,38 +83,24 @@ sudo usermod -a -G docker ec2-user
 exit
 ```
 
-Vuelve a conectarte a la instancia con SSH como en el paso 1.3.
+Vuelve a conectarte a la instancia con SSH como en el paso 2.3.
 
-## 3. Clonar el Repositorio
+## 4. Descargar y Ejecutar el Contenedor en EC2
 
-```bash
-# Clonar el repositorio
-git clone https://github.com/tu-usuario/tu-repositorio.git
-
-# Entrar al directorio
-cd tu-repositorio/04-Deployment/deploy/web-service-docker
-```
-
-## 4. Construir y Ejecutar el Contenedor Docker
+Ya no hace falta clonar el repositorio ni instalar Python en la instancia: solo se descarga la imagen que ya tiene el modelo adentro.
 
 ```bash
-
-# Construir la imagen Docker
-docker build -t taxi-prediction .
+# Descargar la imagen desde Docker Hub
+docker pull tu-usuario/taxi-prediction-aws:v1
 
 # Ejecutar el contenedor
-docker run -d -p 9696:9696 --name taxi-service taxi-prediction
+docker run -d -p 9696:9696 --name taxi-service tu-usuario/taxi-prediction-aws:v1
 
 docker ps
-
 docker logs -f taxi-service
-
-docker inspect taxi-service
-
-
 ```
 
-> 💡 La opción `-d` ejecuta el contenedor en segundo plano y `-p 9696:9696` mapea el puerto 9696 del contenedor al puerto 9696 de la instancia EC2.
+> La opción `-d` ejecuta el contenedor en segundo plano y `-p 9696:9696` mapea el puerto 9696 del contenedor al puerto 9696 de la instancia EC2.
 
 ## 5. Configurar el Grupo de Seguridad en AWS
 
@@ -108,35 +126,42 @@ La URL de tu API será:
 http://ec2-12-34-56-78.compute-1.amazonaws.com:9696
 ```
 
-> 💡 Reemplaza `ec2-12-34-56-78.compute-1.amazonaws.com` con el DNS público de tu instancia EC2.
+Reemplaza `ec2-12-34-56-78.compute-1.amazonaws.com` con el DNS público de tu instancia EC2.
 
 ### Configurar Postman
 
-1. **Abre Postman** en tu computadora
-2. **Crea una nueva solicitud**:
+La forma más rápida es importar la colección ya lista de este mismo directorio:
 
-   - Método: POST
-   - URL: `http://ec2-12-34-56-78.compute-1.amazonaws.com:9696/predict`
-   - Headers: Content-Type: application/json
-3. **Añade el cuerpo de la solicitud**:
+1. **Importa** `NYC_Taxi_API_AWS.postman_collection.json` y `NYC_Taxi_API_AWS.postman_environment.json`
+2. **Selecciona** el environment "NYC Taxi API - AWS EC2"
+3. **Edita** la variable `base_url` con el DNS público de tu instancia (reemplaza el placeholder `ec2-XX-XX-XX-XX...`)
+4. **Corre** las requests "Health Check" y "Predict - Single Trip"
 
-   ```json
-   {
-     "PULocationID": 161,
-     "DOLocationID": 236,
-     "trip_distance": 2.5
-   }
-   ```
-4. **Envía la solicitud** y deberías recibir una respuesta como:
+O manualmente, creando las requests tú misma:
 
-   ```json
-   {
-     "duration": 12.34,
-     "pickup_location": 161,
-     "dropoff_location": 236,
-     "trip_distance": 2.5
-   }
-   ```
+- Health check: `GET http://ec2-12-34-56-78.compute-1.amazonaws.com:9696/health`
+- Predicción: `POST http://ec2-12-34-56-78.compute-1.amazonaws.com:9696/predict`, header `Content-Type: application/json`, body:
+
+  ```json
+  {
+    "PULocationID": 161,
+    "DOLocationID": 236,
+    "trip_distance": 2.5
+  }
+  ```
+
+  Respuesta esperada:
+
+  ```json
+  {
+    "duration": 7.42,
+    "pickup_location": 161,
+    "dropoff_location": 236,
+    "trip_distance": 2.5,
+    "model_name": "nyc-taxi-duration-predictor",
+    "model_version": "2"
+  }
+  ```
 
 ## 7. Comandos Útiles para Gestionar Docker
 
@@ -146,6 +171,7 @@ docker ps
 
 # Ver logs del contenedor
 docker logs taxi-service
+docker logs -f taxi-service   # en tiempo real
 
 # Detener el contenedor
 docker stop taxi-service
@@ -157,7 +183,27 @@ docker start taxi-service
 docker rm taxi-service
 ```
 
-## 8. Solución de Problemas
+## 8. Actualizar el Modelo Desplegado
+
+Cuando reentrenes el modelo y quieras actualizar lo que corre en EC2, repite el flujo desde tu computador (no en EC2):
+
+```bash
+# En tu computador
+cd 04-Deployment/deploy/web-service-aws
+uv run python copy_model.py
+docker build -t taxi-prediction-aws .
+docker tag taxi-prediction-aws tu-usuario/taxi-prediction-aws:v2
+docker push tu-usuario/taxi-prediction-aws:v2
+```
+
+```bash
+# En EC2
+docker pull tu-usuario/taxi-prediction-aws:v2
+docker stop taxi-service && docker rm taxi-service
+docker run -d -p 9696:9696 --name taxi-service tu-usuario/taxi-prediction-aws:v2
+```
+
+## 9. Solución de Problemas
 
 ### El servicio no responde
 
@@ -177,23 +223,34 @@ docker rm taxi-service
    sudo netstat -tulpn | grep 9696
    ```
 
-### Error al construir la imagen Docker
+### Error al construir la imagen Docker (en tu computador)
 
 Si encuentras errores al construir la imagen, asegúrate de que:
 
-1. El archivo `lin_reg.bin` esté en el directorio
+1. Corriste `uv run python copy_model.py` y existe la carpeta `model/` con `model/models_mlflow/` y `model/preprocessor/`
 2. El archivo `Dockerfile` esté correctamente configurado
 3. Tienes suficiente espacio en disco:
+
    ```bash
    df -h
    ```
+
+### `docker pull` falla en EC2 con "repository does not exist" o "unauthorized"
+
+- Confirma que el nombre de la imagen en `docker pull` coincide exactamente con el que usaste en `docker push` (usuario, nombre y tag)
+- Si el repositorio en Docker Hub es privado, primero corre `docker login` en la instancia EC2
 
 ### Problemas de conexión desde Postman
 
 1. **Verifica que el grupo de seguridad** permita el tráfico en el puerto 9696
 2. **Prueba la conexión** con curl desde tu máquina local:
+
    ```bash
    curl -X POST http://ec2-12-34-56-78.compute-1.amazonaws.com:9696/predict \
         -H "Content-Type: application/json" \
         -d '{"PULocationID": 161, "DOLocationID": 236, "trip_distance": 2.5}'
    ```
+
+### Error al cargar el modelo dentro del contenedor (versión incompatible de scikit-learn / xgboost / skops)
+
+Revisa `README.md` -sección Troubleshooting- para el procedimiento completo: hay que revisar `model/preprocessor/requirements.txt` y `model/models_mlflow/requirements.txt`, ajustar `pyproject.toml` y reconstruir la imagen.

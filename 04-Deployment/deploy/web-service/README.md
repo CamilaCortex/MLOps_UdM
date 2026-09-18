@@ -352,6 +352,32 @@ docker run -p 9000:8000 --name nyc-taxi-api nyc-taxi-api
 # Abre: http://localhost:9000
 ```
 
+### Error al cargar el modelo (versión incompatible de scikit-learn / xgboost / skops)
+
+El preprocessor se guardó con skops y el modelo XGBoost en formato `.ubj`;
+ambos formatos son sensibles a la versión exacta de las librerías con las
+que se guardaron. Si reentrenaste el modelo y ahora falla al cargar, revisa
+qué versiones declaró MLflow al momento de guardarlo:
+
+```bash
+cat model/preprocessor/requirements.txt
+cat model/models_mlflow/requirements.txt
+```
+
+Y actualiza las versiones en `pyproject.toml` para que coincidan exactamente
+(sobre todo `scikit-learn` y `skops`), luego vuelve a sincronizar:
+
+```bash
+uv sync
+```
+
+Si usas Docker, también hay que reconstruir la imagen después de actualizar
+`pyproject.toml`:
+
+```bash
+docker build -t nyc-taxi-api .
+```
+
 ---
 
 **Listo para predecir duraciones de viajes de taxi.**

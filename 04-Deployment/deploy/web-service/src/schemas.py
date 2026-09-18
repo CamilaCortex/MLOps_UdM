@@ -2,16 +2,26 @@
 Modelos Pydantic para validación de requests y responses.
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import List
 
 
 class TripRequest(BaseModel):
     """Request para predicción de un viaje"""
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "PULocationID": 161,
+                "DOLocationID": 236,
+                "trip_distance": 5.2
+            }
+        }
+    )
+
     PULocationID: int = Field(..., description="Zona de pickup", ge=1, le=265)
     DOLocationID: int = Field(..., description="Zona de dropoff", ge=1, le=265)
-    trip_distance: float = Field(..., description="Distancia del viaje en millas", gt=0, le=100)
-    
+    trip_distance: float = Field(..., description="Distancia del viaje en millas")
+
     @field_validator('trip_distance')
     @classmethod
     def validate_distance(cls, v):
@@ -20,21 +30,23 @@ class TripRequest(BaseModel):
         if v > 100:
             raise ValueError('La distancia no puede ser mayor a 100 millas')
         return v
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "PULocationID": 161,
-                "DOLocationID": 236,
-                "trip_distance": 5.2
-            }
-        }
 
 
 class BatchTripRequest(BaseModel):
     """Request para predicción de múltiples viajes"""
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "trips": [
+                    {"PULocationID": 161, "DOLocationID": 236, "trip_distance": 5.2},
+                    {"PULocationID": 237, "DOLocationID": 238, "trip_distance": 3.8}
+                ]
+            }
+        }
+    )
+
     trips: List[TripRequest] = Field(..., description="Lista de viajes")
-    
+
     @field_validator('trips')
     @classmethod
     def validate_trips(cls, v):
@@ -43,38 +55,22 @@ class BatchTripRequest(BaseModel):
         if len(v) > 1000:
             raise ValueError('Máximo 1000 viajes por request')
         return v
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "trips": [
-                    {
-                        "PULocationID": 161,
-                        "DOLocationID": 236,
-                        "trip_distance": 5.2
-                    },
-                    {
-                        "PULocationID": 237,
-                        "DOLocationID": 238,
-                        "trip_distance": 3.8
-                    }
-                ]
-            }
-        }
 
 
 class PredictionResponse(BaseModel):
     """Response de predicción individual"""
+    # coerce_numbers_to_str: permite que, si algún caller llega a construir
+    # esta response sin castear model_version a str manualmente, pydantic
+    # lo convierta igual (verificado de forma empírica que es un config
+    # real y funcional, no una opción muerta).
+    model_config = ConfigDict(coerce_numbers_to_str=True)
+
     PULocationID: int
     DOLocationID: int
     trip_distance: float
     predicted_duration_minutes: float
     model_name: str
     model_version: str
-    
-    class Config:
-        # Permitir conversión automática de tipos
-        coerce_numbers_to_str = True
 
 
 class BatchPredictionResponse(BaseModel):

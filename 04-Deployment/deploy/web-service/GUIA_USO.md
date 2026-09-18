@@ -48,17 +48,21 @@ INFO: Application startup complete.
 
 Abre tu navegador en: **http://localhost:8000**
 
-Deberías ver:
+Deberías ver la interfaz web interactiva (no un JSON): un formulario con
+los campos de zona de recogida, zona de destino y distancia del viaje, listo
+para hacer predicciones. Si prefieres verificar por línea de comandos sin
+abrir el navegador, usa el health check en su lugar:
+
+```bash
+curl http://localhost:8000/health
+```
 ```json
 {
-  "message": "NYC Taxi Duration Prediction API",
-  "version": "1.0.0",
-  "endpoints": {
-    "health": "/health",
-    "predict": "/predict",
-    "predict_batch": "/predict/batch",
-    "docs": "/docs"
-  }
+  "status": "healthy",
+  "model_loaded": true,
+  "model_name": "nyc-taxi-duration-predictor",
+  "model_version": "1",
+  "model_rmse": 7.3977
 }
 ```
 
@@ -66,24 +70,15 @@ Deberías ver:
 
 ## Endpoints Disponibles
 
-### **1. GET /** - Información de la API
-**Propósito:** Verificar que la API está corriendo y ver endpoints disponibles
+### **1. GET /** - Interfaz web interactiva
+**Propósito:** Formulario web para hacer predicciones sin necesidad de cURL
+ni Postman (pickup, dropoff, distancia y un botón de "Predecir Duración").
 
 **URL:** `http://localhost:8000/`
 
-**Respuesta:**
-```json
-{
-  "message": "NYC Taxi Duration Prediction API",
-  "version": "1.0.0",
-  "endpoints": {
-    "health": "/health",
-    "predict": "/predict",
-    "predict_batch": "/predict/batch",
-    "docs": "/docs"
-  }
-}
-```
+**Respuesta:** una página HTML (`templates/index.html`), no JSON. Para
+obtener el listado de endpoints o el estado de la API en JSON, usa
+`GET /health` (abajo) o la documentación interactiva en `/docs`.
 
 ---
 

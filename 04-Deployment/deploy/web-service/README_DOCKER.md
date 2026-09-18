@@ -66,7 +66,7 @@ docker run -d \
 ```bash
 docker-compose up -d
 ```
-
+Construye la imagen con compose (como docker build) y levanta el contenedor (como docker run) en un solo paso. Sin -d corre en primer plano y ves los logs ahí mismo.
 ---
 
 ### **4. Verificar que Está Corriendo**
@@ -121,10 +121,13 @@ docker logs -f nyc-taxi-api
 # Con docker-compose
 docker-compose down
 
+
 # Con docker run
 docker stop nyc-taxi-api
 docker rm nyc-taxi-api
 ```
+
+con docker-compose down detiene y elimina el contenedor (equivale a docker stop + docker rm juntos). Nota: docker-compose stop solo lo detiene sin eliminarlo, por si quieres esa opción intermedia.
 
 ### **Reiniciar el Contenedor**
 
@@ -205,6 +208,7 @@ curl http://localhost:8000/health
 docker-compose down
 ```
 
+Construye la imagen (como docker build) y levanta el contenedor (como docker run) en un solo paso. Sin -d corre en primer plano y ves los logs ahí mismo.
 ---
 
 ## 🚀 Ventajas de Docker

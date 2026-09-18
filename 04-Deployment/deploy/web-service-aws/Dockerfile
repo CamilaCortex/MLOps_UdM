@@ -1,22 +1,42 @@
-FROM python:3.11.9-slim
+# Imagen base de Python (misma versión que pyproject.toml)
+FROM python:3.11-slim
 
-# Actualizar pip e instalar UV
-RUN pip install -U pip
-RUN pip install uv
-
+# Directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiar solo el archivo de dependencias
-COPY [ "pyproject.toml", "./" ]
+# Instalar uv: el mismo gestor de dependencias que se usa en todo el
+# proyecto, para no duplicar versiones a mano en dos lugares distintos
+# (pyproject.toml es la única fuente de verdad de las dependencias).
+RUN pip install --no-cache-dir uv
 
-# Instalar dependencias con UV
-RUN uv pip install --system -e .
+# Copiar solo el archivo de dependencias primero (aprovecha el cache de
+# Docker: si el código cambia pero no las dependencias, este paso no se
+# repite).
+COPY pyproject.toml ./
 
-# Copiar solo los archivos necesarios para la aplicación
-COPY [ "predict.py", "lin_reg.bin", "./" ]
+# Instalar las dependencias declaradas en pyproject.toml -incluye mlflow,
+# xgboost, scikit-learn y skops en las versiones compatibles con el modelo
+# entrenado.
+RUN uv sync --no-dev
 
-# Exponer puerto
+# Copiar el código fuente de la aplicación
+COPY predict.py ./
+COPY src/ ./src/
+
+# Copiar el modelo (debe existir ANTES de este build: correr primero
+# "uv run python copy_model.py" en tu máquina -ver README.md/
+# GUIA_AWS_EC2.md-. Esta imagen se construye localmente CON el modelo ya
+# adentro, porque EC2 no tiene acceso al registro de MLflow ni al
+# directorio 03-Orchestration/Prefect-pipelines/models/, que está
+# excluido de git).
+COPY model/ ./model/
+
+# Exponer el puerto donde escucha la API
 EXPOSE 9696
 
-# Ejecutar la aplicación con gunicorn
-ENTRYPOINT [ "gunicorn", "--bind=0.0.0.0:9696", "predict:app" ]
+# Variable de entorno para que los logs de Python salgan sin buffer
+ENV PYTHONUNBUFFERED=1
+
+# Ejecutar la aplicación con gunicorn, usando el entorno que uv acaba de
+# crear
+CMD ["uv", "run", "gunicorn", "--bind=0.0.0.0:9696", "predict:app"]
