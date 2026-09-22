@@ -237,3 +237,12 @@ settings_local.py
 03-Orchestrarion/mlruns/
 
 03-Orchestration/Prefect-pipelines/models/
+# Excepción: metadata.json de los modelos YA copiados dentro de deploy/*/model
+# SÍ se versiona en git (a diferencia de 03-Orchestration/Prefect-pipelines/models/,
+# que sigue sin trackearse). El servicio lo necesita para arrancar (ver
+# model_loader.py: raise FileNotFoundError si falta), y estas carpetas de
+# deploy se clonan directo en EC2, así que este archivo puntual no puede
+# quedar bloqueado por la regla *.json de arriba.
+!04-Deployment/deploy/web-service/model/metadata.json
+!04-Deployment/deploy/web-service-aws/model/metadata.json
+!04-Deployment/deploy/batch-deploy/model/metadata.json

@@ -1,77 +1,102 @@
 # Guía para Desplegar en AWS EC2 (Para Principiantes)
 
-Esta guía te ayudará a desplegar tu servicio de predicción de taxis en un servidor AWS EC2 y configurarlo para recibir solicitudes desde Postman.
+Esta guía te lleva desde cero -crear la instancia EC2 gratuita- hasta tener tu servicio de predicción de taxis respondiendo peticiones desde Postman.
 
-**Importante sobre el modelo**: el modelo (XGBoost `.ubj`) y el preprocessor (`skops`) están excluidos de git a propósito (pesan y cambian con cada entrenamiento), así que la instancia EC2 no los puede obtener con un simple `git clone`. Por eso el flujo de esta guía es: construyes la imagen Docker **en tu computador** (con el modelo ya adentro), la subes a Docker Hub, y en EC2 solo la descargas y la corres.
+**Importante sobre el modelo**: a diferencia de `03-Orchestration/Prefect-pipelines/models/` (que sí está excluida de git porque pesa y cambia con cada entrenamiento), los archivos del modelo "champion" ya copiados dentro de **esta** carpeta (`model/models_mlflow/` y `model/preprocessor/`) sí están versionados en git. Por eso el flujo de esta guía es simple: la instancia EC2 clona el repositorio directamente y ya tiene el modelo adentro - no hace falta subir ni descargar ninguna imagen de Docker Hub.
 
-## 0. Construir la Imagen con el Modelo (en tu computador)
+## 0. Antes de empezar: cuenta de AWS
 
-Antes de tocar EC2, desde tu computador:
+Si todavía no tienes cuenta, créala en [aws.amazon.com/free](https://aws.amazon.com/free) (pide una tarjeta para verificar identidad, pero los recursos de esta guía caben dentro del Free Tier si sigues las instrucciones al pie de la letra). Si ya tienes cuenta, entra directo a la consola de EC2: [console.aws.amazon.com/ec2](https://console.aws.amazon.com/ec2/).
 
-```bash
-cd 04-Deployment/deploy/web-service-aws
+## 1. Crear la Instancia EC2 (Free Tier)
 
-# Copia el modelo "champion" actual desde MLflow
-uv run python copy_model.py
+1. En la consola de EC2, haz clic en **Launch instance** ("Lanzar instancia").
+2. **Name** ("Nombre"): ponle algo identificable, por ejemplo `taxi-prediction-api`.
+3. **Application and OS Images (Amazon Machine Image)**:
 
-# Construye la imagen con el modelo ya incluido
-docker build -t taxi-prediction-aws .
+   - Elige **Amazon Linux 2023 AMI**.
+   - Confirma que diga la etiqueta **"Free tier eligible"** justo debajo. Esta guía asume Amazon Linux (usa el comando `yum`); si eliges Ubuntu, los comandos de instalación cambian (`apt` en vez de `yum`).
+4. **Instance type** ("Tipo de instancia"): elige **t2.micro** o **t3.micro** (el que diga "Free tier eligible"). Es más que suficiente para este servicio.
+5. **Key pair (login)**:
 
-# Pruébala en local antes de subirla
-docker run -d -p 9696:9696 --name taxi-prediction-aws taxi-prediction-aws
-curl http://localhost:9696/health
-docker stop taxi-prediction-aws && docker rm taxi-prediction-aws
-```
+   - Haz clic en **Create new key pair**.
+   - Dale un nombre (por ejemplo `taxi-api-key`).
+   - Tipo: **RSA**. Formato: **.pem** (sirve para Mac, Linux y WSL en Windows; si vas a usar PuTTY nativo en Windows sin WSL, elige `.ppk`).
+   - Descarga el archivo y guárdalo en un lugar que recuerdes - **AWS no te deja volver a descargarlo después**. Lo vas a necesitar en el Paso 3.
+6. **Network settings** ("Configuración de red"):
 
-## 1. Subir la Imagen a Docker Hub
+   - Deja marcado **Allow SSH traffic from** y selecciona **My IP** (esto crea automáticamente la regla de entrada SSH que necesitas en el Paso 2).
+   - No actives "Allow HTTP traffic" ni "Allow HTTPS traffic" - tu API va a usar el puerto 9696, esa regla la agregas aparte en el Paso 2.
+   - Deja la opción de IP pública automática activada (viene así por defecto en la subred pública por defecto de la mayoría de las cuentas).
+7. **Configure storage** ("Configurar almacenamiento"): deja el valor por defecto (8 GiB, tipo gp3). Está dentro del Free Tier (hasta 30 GiB) y sobra para esta imagen.
+8. Haz clic en **Launch instance**.
+9. Espera 1-2 minutos. En la lista de instancias, el **Instance state** debe decir **Running** y el **Status check** debe decir **2/2 checks passed** antes de seguir.
+10. Haz clic en tu instancia y anota el **Public IPv4 DNS** (algo como `ec2-12-34-56-78.compute-1.amazonaws.com`). Lo vas a usar para conectarte por SSH y para configurar Postman.
 
-```bash
-# Inicia sesión (una sola vez)
-docker login
+## 2. Configurar el Grupo de Seguridad en AWS
 
-# Etiqueta la imagen con tu usuario de Docker Hub
-docker tag taxi-prediction-aws tu-usuario/taxi-prediction-aws:v1
+El grupo de seguridad es el firewall de tu instancia. Necesitas **dos reglas de entrada**.
 
-# Sube la imagen
-docker push tu-usuario/taxi-prediction-aws:v1
-```
+### Regla 1: acceso SSH (para poder conectarte a la instancia)
 
-> Reemplaza `tu-usuario` por tu usuario real de Docker Hub. El repositorio puede ser público o privado (si es privado, en el Paso 4 necesitarás hacer `docker login` también en la instancia EC2).
+Si en el Paso 1.6 dejaste marcado "Allow SSH traffic from: My IP", esta regla **ya existe** - solo tienes que revisarla si más adelante no puedes conectarte:
 
-## 2. Conectarte a tu Instancia EC2
+1. Ve a la consola de EC2 y selecciona tu instancia.
+2. Haz clic en el grupo de seguridad asociado (columna "Security").
+3. Revisa que exista una regla de entrada:
+
+   - Tipo: SSH
+   - Puerto: 22
+   - Origen: My IP (o 0.0.0.0/0 si quieres poder conectarte desde cualquier red, menos seguro)
+4. Si la regla dice "My IP" pero tu IP cambió desde que la creaste (cambiaste de red, usas VPN, tu proveedor te asigna IP dinámica), edita la regla y vuelve a seleccionar "My IP" para refrescarla con tu IP actual.
+
+### Regla 2: acceso a la API (para que Postman te llegue)
+
+Esta sí tienes que crearla a mano:
+
+1. En el mismo grupo de seguridad, haz clic en **Edit inbound rules** ("Editar reglas de entrada").
+2. **Add rule** ("Añadir regla"):
+
+   - Tipo: TCP personalizado
+   - Rango de puertos: 9696
+   - Origen: Anywhere (0.0.0.0/0)
+   - Descripción: Taxi Prediction API
+3. **Save rules** ("Guardar reglas").
+
+## 3. Conectarte a tu Instancia EC2
 
 ### Requisitos previos
 
-- Una instancia EC2 ya creada en AWS
-- El archivo `.pem` de tu clave privada
-- El DNS público de tu instancia (algo como `ec2-12-34-56-78.compute-1.amazonaws.com`)
+- La instancia ya creada (Paso 1), en estado "Running"
+- El archivo `.pem` que descargaste al crear el key pair
+- El DNS público de tu instancia (anotado en el Paso 1.10)
 
 ### Pasos para conectarte
 
-1. **Abre una terminal en tu computadora**
-2. **Cambia los permisos de tu archivo de clave**:
+1. Abre una terminal en tu computador (en Windows, la terminal de WSL).
+2. Cambia los permisos de tu archivo de clave:
 
    ```bash
    chmod 400 tu-clave.pem
    ```
-3. **Conéctate a tu instancia EC2**:
+3. Conéctate a tu instancia:
 
    ```bash
    ssh -i tu-clave.pem ec2-user@ec2-12-34-56-78.compute-1.amazonaws.com
    ```
 
-   Reemplaza `tu-clave.pem` con el nombre de tu archivo de clave y la dirección con el DNS público de tu instancia.
+   Reemplaza `tu-clave.pem` con el nombre de tu archivo y la dirección con el DNS público de tu instancia. El usuario es `ec2-user` porque la AMI es Amazon Linux 2023 (con Ubuntu sería `ubuntu`, con Debian `admin`).
 
-## 3. Instalar Docker en EC2
+## 4. Instalar Docker y Git en EC2
 
-Una vez conectado a tu instancia EC2, instala Docker:
+Ya conectado a tu instancia por SSH:
 
 ```bash
 # Actualizar los paquetes
 sudo yum update -y
 
-# Instalar Docker
-sudo yum install -y docker
+# Instalar Docker y Git
+sudo yum install -y docker git
 
 # Iniciar el servicio Docker
 sudo service docker start
@@ -79,63 +104,69 @@ sudo service docker start
 # Añadir tu usuario al grupo docker para no tener que usar sudo
 sudo usermod -a -G docker ec2-user
 
-# Reiniciar la sesión para aplicar los cambios de grupo
+# Reiniciar la sesión para aplicar el cambio de grupo
 exit
 ```
 
-Vuelve a conectarte a la instancia con SSH como en el paso 2.3.
+Vuelve a conectarte con SSH como en el Paso 3.3.
 
-## 4. Descargar y Ejecutar el Contenedor en EC2
+## 5. Clonar el Repositorio y Construir la Imagen (en EC2)
 
-Ya no hace falta clonar el repositorio ni instalar Python en la instancia: solo se descarga la imagen que ya tiene el modelo adentro.
+El modelo ya viene incluido en el repositorio (ver la nota al inicio de esta guía), así que no hace falta copiar nada aparte ni instalar Python en la instancia: clonas, entras a la carpeta y construyes.
 
 ```bash
-# Descargar la imagen desde Docker Hub
-docker pull tu-usuario/taxi-prediction-aws:v1
+# Clonar el repositorio (es público, no necesita credenciales)
+git clone https://github.com/CamilaCortex/MLOps_UdM.git
 
-# Ejecutar el contenedor
-docker run -d -p 9696:9696 --name taxi-service tu-usuario/taxi-prediction-aws:v1
+# Entrar a la carpeta de este servicio
+cd MLOps_UdM/04-Deployment/deploy/web-service-aws
+
+# Confirmar que el modelo llegó con el clone
+ls model/models_mlflow/ model/preprocessor/
+
+# Construir la imagen
+docker build -t taxi-prediction-aws .
+```
+
+> Si `ls model/models_mlflow/` no muestra `MLmodel` y `model.ubj` (o `model/preprocessor/` no muestra `MLmodel` y `model.skops`), el clone no trajo el modelo - revisa la sección de Solución de Problemas.
+
+## 6. Ejecutar el Contenedor
+
+```bash
+docker run -d -p 9696:9696 --name taxi-service taxi-prediction-aws
 
 docker ps
 docker logs -f taxi-service
+
+# Prueba el servicio DESDE DENTRO de la instancia EC2, antes de tocar el
+# grupo de seguridad o Postman. Si esto responde, el contenedor y el
+# modelo ya están funcionando bien - lo que falte después es networking,
+# no la aplicación.
+curl http://localhost:9696/health
 ```
 
-> La opción `-d` ejecuta el contenedor en segundo plano y `-p 9696:9696` mapea el puerto 9696 del contenedor al puerto 9696 de la instancia EC2.
+> La opción `-d` ejecuta el contenedor en segundo plano y `-p 9696:9696` mapea el puerto 9696 de la instancia EC2 (host) al puerto 9696 de adentro del contenedor. Es la misma lógica de `-p host:container` que ya conoces de probarlo en tu computador - aquí el "host" ya no es tu laptop, es la instancia EC2.
+>
+> Si el `curl http://localhost:9696/health` de arriba no responde, el problema está en el contenedor (revisa `docker logs taxi-service`) y todavía no tiene sentido tocar el grupo de seguridad ni Postman.
 
-## 5. Configurar el Grupo de Seguridad en AWS
-
-Para permitir el tráfico externo a tu aplicación:
-
-1. **Ve a la consola de AWS** y selecciona tu instancia EC2
-2. **Haz clic en el grupo de seguridad** asociado a tu instancia
-3. **Añade una regla de entrada**:
-
-   - Tipo: TCP personalizado
-   - Rango de puertos: 9696
-   - Origen: Anywhere (0.0.0.0/0)
-   - Descripción: Taxi Prediction API
-4. **Guarda los cambios**
-
-## 6. Probar el Servicio desde Postman
+## 7. Probar el Servicio desde Postman
 
 ### Obtener la URL de tu API
-
-La URL de tu API será:
 
 ```
 http://ec2-12-34-56-78.compute-1.amazonaws.com:9696
 ```
 
-Reemplaza `ec2-12-34-56-78.compute-1.amazonaws.com` con el DNS público de tu instancia EC2.
+Reemplaza `ec2-12-34-56-78.compute-1.amazonaws.com` con el DNS público de tu instancia (Paso 1.10).
 
 ### Configurar Postman
 
 La forma más rápida es importar la colección ya lista de este mismo directorio:
 
-1. **Importa** `NYC_Taxi_API_AWS.postman_collection.json` y `NYC_Taxi_API_AWS.postman_environment.json`
-2. **Selecciona** el environment "NYC Taxi API - AWS EC2"
-3. **Edita** la variable `base_url` con el DNS público de tu instancia (reemplaza el placeholder `ec2-XX-XX-XX-XX...`)
-4. **Corre** las requests "Health Check" y "Predict - Single Trip"
+1. **Importa** `NYC_Taxi_API_AWS.postman_collection.json` y `NYC_Taxi_API_AWS.postman_environment.json`.
+2. **Selecciona** el environment "NYC Taxi API - AWS EC2".
+3. **Edita** la variable `base_url` con el DNS público de tu instancia (reemplaza el placeholder `ec2-XX-XX-XX-XX...`).
+4. **Corre** las requests "Health Check" y "Predict - Single Trip".
 
 O manualmente, creando las requests tú misma:
 
@@ -163,7 +194,7 @@ O manualmente, creando las requests tú misma:
   }
   ```
 
-## 7. Comandos Útiles para Gestionar Docker
+## 8. Comandos Útiles para Gestionar Docker
 
 ```bash
 # Ver contenedores en ejecución
@@ -183,67 +214,92 @@ docker start taxi-service
 docker rm taxi-service
 ```
 
-## 8. Actualizar el Modelo Desplegado
+## 9. Actualizar el Modelo Desplegado
 
-Cuando reentrenes el modelo y quieras actualizar lo que corre en EC2, repite el flujo desde tu computador (no en EC2):
+Cuando reentrenes el modelo y quieras actualizar lo que corre en EC2, el flujo es: actualizas el modelo y subes el cambio a git desde tu computador, y en EC2 solo descargas ese cambio y reconstruyes.
 
 ```bash
 # En tu computador
 cd 04-Deployment/deploy/web-service-aws
 uv run python copy_model.py
-docker build -t taxi-prediction-aws .
-docker tag taxi-prediction-aws tu-usuario/taxi-prediction-aws:v2
-docker push tu-usuario/taxi-prediction-aws:v2
+git add model/
+git commit -m "Actualizar modelo desplegado en web-service-aws"
+git push
 ```
 
 ```bash
 # En EC2
-docker pull tu-usuario/taxi-prediction-aws:v2
+cd ~/MLOps_UdM
+git pull
+cd 04-Deployment/deploy/web-service-aws
+docker build -t taxi-prediction-aws .
 docker stop taxi-service && docker rm taxi-service
-docker run -d -p 9696:9696 --name taxi-service tu-usuario/taxi-prediction-aws:v2
+docker run -d -p 9696:9696 --name taxi-service taxi-prediction-aws
+curl http://localhost:9696/health
 ```
 
-## 9. Solución de Problemas
+## 10. Solución de Problemas
+
+### No puedo conectarme por SSH o por el botón "Connect" de la consola
+
+Antes de sospechar de tu clave `.pem`, revisa en este orden:
+
+1. **Grupo de seguridad**: confirma que existe la regla SSH (puerto 22) descrita en el Paso 2, y que el origen ("My IP") sigue siendo tu IP actual.
+2. **IP pública de la instancia**: en la consola, confirma que la instancia tiene una IP pública asignada (si la lanzaste sin "Auto-assign Public IP", ni SSH ni el botón "Connect" van a funcionar).
+3. **Usuario correcto según la AMI**: `ec2-user` para Amazon Linux, `ubuntu` para Ubuntu, `admin` para Debian. Usar el usuario equivocado da "Permission denied (publickey)".
+4. **La clave correcta**: confirma que el `.pem` que estás usando es el mismo par de llaves con el que se lanzó la instancia (si después generaste una clave nueva, esa no sirve para esta instancia).
+5. **Permisos del archivo `.pem`**: debe ser `chmod 400 tu-clave.pem`; en Windows/WSL a veces el archivo hereda permisos de Windows demasiado abiertos y SSH lo rechaza directamente.
+
+### El SSH se queda "pegado" (no da ningún error, simplemente no conecta nunca)
+
+Si el comando `ssh -i tu-clave.pem ec2-user@...` se queda esperando indefinidamente sin ningún mensaje de error, casi siempre es la regla de SSH del grupo de seguridad bloqueando la conexión (el paquete ni siquiera llega a la instancia) - no es un problema de la clave.
+
+**La causa más común: tu IP pública no es fija.** Muchos proveedores de internet (sobre todo en redes de universidad, wifi compartido, o si usas VPN) no asignan una IP fija por usuario: usan un conjunto de IPs y te van rotando entre ellas, a veces cada pocos minutos (esto se llama CGNAT). Si ves que la IP que AWS detectó como "Mi IP" cambia entre una consulta y otra (por ejemplo de `179.1.224.139/32` a `179.1.224.148/32` sin que hayas hecho nada), esa es la señal: para cuando guardaste la regla, tu proveedor ya te había movido a otra IP distinta.
+
+Dos formas de resolverlo:
+
+1. **Para este ejercicio del curso (más simple)**: cambia el origen de la regla SSH a **Anywhere (0.0.0.0/0)**, igual que la regla del puerto 9696. Esto es aceptable aquí porque Amazon Linux solo acepta login por llave `.pem`, nunca por contraseña - nadie puede entrar sin tu archivo de clave, aunque el puerto esté abierto a cualquier IP. El único costo es "ruido" de bots intentando conectarse (que van a fallar igual). Eso sí: cuando termines de probar, detén o termina la instancia en vez de dejarla corriendo expuesta indefinidamente.
+2. **Para un entorno más serio**: usa **AWS Systems Manager Session Manager** en vez de SSH - te conectas a la instancia desde la consola de AWS sin necesitar el puerto 22 abierto para nada. Requiere configurar un rol de IAM adicional en la instancia, así que es un paso extra, pero elimina este problema por completo.
+
+### El `git clone` no trae el modelo (`model/models_mlflow/` o `model/preprocessor/` vacíos o incompletos)
+
+1. Confirma que estás clonando la rama correcta (`main`) y que el clone terminó sin errores.
+2. En tu computador, confirma que el modelo SÍ está comiteado: `git ls-files 04-Deployment/deploy/web-service-aws/model` debe listar `MLmodel`, `model.ubj` (o `model.skops`) y `registered_model_meta`. Si no aparece nada, corre `uv run python copy_model.py`, luego `git add model/`, `git commit` y `git push` desde tu computador antes de volver a clonar en EC2.
 
 ### El servicio no responde
 
-1. **Verifica que el contenedor esté en ejecución**:
+1. Verifica que el contenedor esté en ejecución:
 
    ```bash
    docker ps
    ```
-2. **Revisa los logs del contenedor**:
+2. Revisa los logs del contenedor:
 
    ```bash
    docker logs taxi-service
    ```
-3. **Verifica que el puerto esté abierto**:
+3. Verifica que el puerto esté abierto:
 
    ```bash
    sudo netstat -tulpn | grep 9696
    ```
 
-### Error al construir la imagen Docker (en tu computador)
+### Error al construir la imagen Docker (en EC2)
 
 Si encuentras errores al construir la imagen, asegúrate de que:
 
-1. Corriste `uv run python copy_model.py` y existe la carpeta `model/` con `model/models_mlflow/` y `model/preprocessor/`
-2. El archivo `Dockerfile` esté correctamente configurado
+1. El `git clone` trajo la carpeta `model/` completa (ver el punto anterior de esta sección).
+2. El archivo `Dockerfile` esté correctamente presente (`ls Dockerfile`).
 3. Tienes suficiente espacio en disco:
 
    ```bash
    df -h
    ```
 
-### `docker pull` falla en EC2 con "repository does not exist" o "unauthorized"
-
-- Confirma que el nombre de la imagen en `docker pull` coincide exactamente con el que usaste en `docker push` (usuario, nombre y tag)
-- Si el repositorio en Docker Hub es privado, primero corre `docker login` en la instancia EC2
-
 ### Problemas de conexión desde Postman
 
-1. **Verifica que el grupo de seguridad** permita el tráfico en el puerto 9696
-2. **Prueba la conexión** con curl desde tu máquina local:
+1. Verifica que el grupo de seguridad permita el tráfico en el puerto 9696 (Paso 2, Regla 2).
+2. Prueba la conexión con curl desde tu máquina local:
 
    ```bash
    curl -X POST http://ec2-12-34-56-78.compute-1.amazonaws.com:9696/predict \
@@ -253,4 +309,4 @@ Si encuentras errores al construir la imagen, asegúrate de que:
 
 ### Error al cargar el modelo dentro del contenedor (versión incompatible de scikit-learn / xgboost / skops)
 
-Revisa `README.md` -sección Troubleshooting- para el procedimiento completo: hay que revisar `model/preprocessor/requirements.txt` y `model/models_mlflow/requirements.txt`, ajustar `pyproject.toml` y reconstruir la imagen.
+Revisa `README.md` -sección Troubleshooting- para el procedimiento completo: hay que revisar `model/preprocessor/requirements.txt` y `model/models_mlflow/requirements.txt` (si existen localmente), ajustar `pyproject.toml` y reconstruir la imagen.

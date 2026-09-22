@@ -78,7 +78,7 @@ curl http://localhost:9696/health
 
 ## Paso 6: Desplegar en EC2
 
-Ver la guía completa en [`GUIA_AWS_EC2.md`](./GUIA_AWS_EC2.md): construir la imagen localmente (Pasos 1-4 de arriba), subirla a Docker Hub, y en la instancia EC2 descargarla y correrla -sin necesidad de clonar el repositorio completo ni de tener acceso a MLflow desde EC2.
+Ver la guía completa en [`GUIA_AWS_EC2.md`](./GUIA_AWS_EC2.md): crear una instancia EC2 gratuita, clonar este repositorio directamente en ella (el modelo ya viene versionado en git dentro de esta carpeta, así que no hace falta MLflow ni Docker Hub) y construir la imagen ahí mismo.
 
 ---
 
@@ -149,6 +149,10 @@ docker run -d -p 9000:9696 --name taxi-prediction-aws taxi-prediction-aws
 ### La API responde 400 con "Faltan campos requeridos"
 
 El body del POST a `/predict` debe traer `PULocationID`, `DOLocationID` y `trip_distance`. Revisa el header `Content-Type: application/json` y que el JSON esté bien formado.
+
+### El SSH a la instancia EC2 se queda "pegado" (no conecta ni da error)
+
+Casi siempre es la regla de SSH del grupo de seguridad, no la clave `.pem`. La causa más común: tu IP pública no es fija (redes de universidad, wifi compartido o VPN suelen rotarte entre varias IPs) y la regla quedó apuntando a una IP vieja. Ver la sección "El SSH se queda pegado" en [`GUIA_AWS_EC2.md`](./GUIA_AWS_EC2.md) para el diagnóstico completo y las dos formas de resolverlo.
 
 ---
 
